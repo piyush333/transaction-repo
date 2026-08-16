@@ -1,0 +1,36 @@
+import { Card } from "@/components/ui/card";
+import { getCurrentProfile } from "@/lib/queries";
+import { BarChart3, ScaleIcon, ShieldCheck, Building2, Users } from "lucide-react";
+import Link from "next/link";
+
+export default async function MorePage() {
+  const profile = await getCurrentProfile();
+  const canSeeAudit = profile && ["owner", "auditor"].includes(profile.role);
+
+  const items = [
+    { href: "/graphs", label: "Graphs", icon: BarChart3 },
+    { href: "/reconciliation", label: "Reconciliation", icon: ScaleIcon },
+    ...(canSeeAudit ? [{ href: "/audit-log", label: "Audit Log", icon: ShieldCheck }] : []),
+    { href: "/cities", label: "Cities", icon: Building2 },
+    { href: "/parties", label: "Parties", icon: Users },
+  ];
+
+  return (
+    <div className="space-y-6">
+      <h1 className="text-xl font-bold">More</h1>
+      <div className="grid grid-cols-2 gap-3">
+        {items.map((item) => {
+          const Icon = item.icon;
+          return (
+            <Link key={item.href} href={item.href}>
+              <Card className="flex flex-col items-center gap-2 p-5 text-center hover:shadow-md">
+                <Icon className="h-5 w-5" />
+                <span className="text-sm font-medium">{item.label}</span>
+              </Card>
+            </Link>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
