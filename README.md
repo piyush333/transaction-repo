@@ -1,123 +1,133 @@
 # Settlement Ledger
 
-A private double-entry accounting and settlement-management app: cities,
-parties, token-based transactions, and a balance engine that computes every
-figure from the ledger — never from a manually-edited number.
+A private double-entry accounting and settlement-management application:
+cities, parties, token-based transactions, and a balance engine that
+computes every number from the ledger — never from a manually-edited
+"current balance" field.
 
-Stack: **Next.js (App Router, TypeScript, Tailwind) + Supabase (Postgres,
-Auth, Row-Level Security)**. This was chosen so the whole app deploys with
-zero servers to manage and — once connected to Vercel — **every push to
-`main` auto-deploys with no manual steps**.
+## Stack
 
-## Architecture
+- **Next.js 16** (App Router, TypeScript, Tailwind) — deployed on **Netlify**
+  (auto-deploys on every push once the repo is connected — see Deployment
+  below).
+- **Supabase** (Postgres) — the database, auth, and the entire ledger/balance
+  engine live here as SQL (tables, views, functions), not in application
+  code. Project: `transaction-repo` (ref `bvkpylpqdsdqnwunpaxy`, region
+  `ap-south-1`).
+
+## Architecture: the four core objects
 
 ```
-Owner → Cities → Parties → Tokens/Transactions → Ledger Entries → Balances
+CITY → PARTY → TOKEN (transaction) → LEDGER ENTRIES → BALANCES
 ```
 
-- **`supabase/migrations/`** — the entire schema, RLS policies, and the
-  ledger engine, as plain SQL migrations (applied in filename order).
-- **`src/app/`** — Next.js App Router pages (dashboard, cities, parties,
-  transactions, search, reconciliation, audit log).
-- **`src/lib/queries.ts`** / **`src/lib/actions.ts`** — all reads and writes
-  go through these; there is no other place data is fetched or mutated.
+Every transaction posts a **balanced pair of double-entry ledger legs** to
+`transaction_entries`. Nothing displayed in the UI is stored as an editable
+number — city balances, party balances, receivable/payable, and city-to-city
+obligations are all SQL views computed live from `transaction_entries` /
+`transactions`. See `supabase/migrations/03_balance_views.sql` for the full
+accounting convention (mirrors the worked example in the original product
+spec):
 
-### The Balance Engine
-
-Every transaction posts a **balanced pair of ledger legs**
-(`transaction_entries`) via the `create_transaction()` Postgres function —
-never a bare balance update. Balances are Postgres **views**
-(`party_balances`, `city_balances`, `city_to_city_obligations`,
-`dashboard_kpis`, etc.) that sum ledger entries live. Nothing in the schema
-lets a balance be edited directly.
-
-Accounting convention (see `supabase/migrations/20260816120000_core_tables.sql`
-for the full comment):
-
-- `party balance = opening_balance + SUM(debit) − SUM(credit)`
-- **balance > 0** → the party owes the owner → **Receivable**
-- **balance < 0** → the owner owes the party → **Payable**
-- City cash balances follow the same debit-increases convention.
+- `party balance = opening_balance + SUM(debit) - SUM(credit)`
+  - `balance > 0` → the party owes the owner → **Receivable**
+  - `balance < 0` → the owner owes the party → **Payable**
+- `city balance = opening_balance + SUM(debit) - SUM(credit)` on that city's
+  cash entries.
 
 Corrections never delete history: `reverse_transaction()` posts an
-equal-and-opposite transaction and links the two records together. Triggers
-block hard deletes on `transactions`, `transaction_entries`, and
-`audit_logs` outright.
-
-### Roles (enforced at the database layer via RLS, not just in the UI)
-
-| Role | Access |
-|---|---|
-| `owner` | Full access everywhere |
-| `city_manager` | Read everything; create/confirm/reverse transactions and parties only in their assigned city |
-| `operator` | Create transactions in their assigned city (posted as `pending`, needs manager/owner confirmation) |
-| `viewer` | Read-only, everywhere |
-| `auditor` | Read-only, plus the audit log |
-
-The **first person to sign up automatically becomes `owner`** (see
-`handle_new_user()`). Change anyone else's role directly in Supabase Studio →
-Table Editor → `profiles` (a dedicated admin UI for this is a good Phase 2
-addition).
+equal-and-opposite transaction and links the two together. Hard deletes are
+blocked at the trigger level on `transactions`, `transaction_entries`, and
+`audit_logs`.
 
 ## What's built (Phase 1 MVP)
 
-Login/signup, Cities, Parties, token-based transaction creation
-(`CITY-DATE-SEQUENCE` / `CITY-DESTCITY-DATE-SEQUENCE`), the ledger engine,
-automatic city/party/city-to-city balances, global search, transaction
-history with full drill-down, dashboard KPIs, receivable/payable framing,
-append-only audit log — plus, ahead of schedule, a stylized India map,
-balance/volume/exposure graphs, and a reconciliation screen (originally
-scoped for Phase 2 in the product spec).
+- Email/password auth (Supabase Auth). The **first person to sign up
+  becomes Owner** automatically; everyone after that is a Viewer until the
+  Owner changes their role from the `profiles` table.
+- Role-based access control enforced at the database layer via Postgres RLS
+  (Owner / City Manager / Operator / Viewer / Auditor — see
+  `supabase/migrations/04_rls_policies.sql`), not just hidden in the UI.
+- Cities, Parties (with opening balances, phone, type, notes).
+- Token-based transactions (`CITY-DATE-SEQUENCE` / `CITY-DEST-DATE-SEQUENCE`,
+  e.g. `NMC-260814-000001`), covering receipts, payments, city transfers,
+  party-to-party transfers, and reconciliation adjustments.
+- Automatic double-entry ledger + balance engine (cities, parties, city ×
+  party, city-to-city obligations).
+- Dashboard: KPI cards, an India map with obligation lines between cities,
+  balance/receivable-payable/volume/exposure graphs, top outstanding
+  parties, recent tokens.
+- Full token drill-down (ledger entries, related transactions, modification
+  history) and global search (token, party, city, phone, amount).
+- Reconciliation view (🟢 matched / 🟡 pending / 🔴 discrepancy).
+- Append-only audit log (Owner/Auditor only).
 
-Not built yet (see the original spec's Phase 2/3 lists): MFA, settlement
-linking UI (the DB tracks `settles_transaction_id` already), PDF/export
-reports, notifications/alerts delivery, party KYC document upload UI,
-mobile app, multi-currency, anomaly detection.
+**Not built yet** (Phase 2/3 in the original spec — mobile app, automated
+anomaly detection, forecasting, multi-currency, attachments/KYC upload,
+notifications delivery, PDF/report exports). The schema already has the
+tables/columns these will need (`party_documents`, `notifications`,
+`alert_settings`).
 
 ## Local development
 
 ```bash
 npm install
-cp .env.example .env.local   # fill in your Supabase project URL + anon key
 npm run dev
 ```
 
-## Deployment (Vercel, auto-deploy on every push)
+Copy `.env.example` to `.env.local` and fill in your Supabase project URL +
+anon/publishable key (Project Settings → API in the Supabase dashboard).
 
-This is the **one manual step** — after this, every push to your branch
-redeploys automatically with no further action:
+## Database migrations
 
-1. Go to [vercel.com/new](https://vercel.com/new) and import this GitHub repo.
-2. Set these two environment variables in the Vercel project settings
-   (same values as `.env.local`):
+All schema changes live as SQL files in `supabase/migrations/`, applied in
+order. To link a local Supabase CLI to this project (optional, only needed
+if you want to run migrations from your machine instead of the dashboard's
+SQL editor):
+
+```bash
+npx supabase login
+npx supabase link --project-ref bvkpylpqdsdqnwunpaxy
+npx supabase db push
+```
+
+## Deployment (Netlify — auto-deploy, no manual steps after setup)
+
+1. In Netlify: **Add new site → Import an existing project**, pick this
+   repo/branch.
+2. Netlify auto-detects `netlify.toml` (Next.js Runtime via
+   `@netlify/plugin-nextjs`) — no build settings to change.
+3. Add the two environment variables from `.env.example` under **Site
+   settings → Environment variables**:
    - `NEXT_PUBLIC_SUPABASE_URL`
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-3. Deploy. Vercel's GitHub integration will now auto-build and auto-deploy
-   on every push — no further manual steps.
+4. Deploy. From then on, every push to this branch redeploys automatically
+   — no further manual steps.
 
-The Supabase project itself needs no ongoing maintenance beyond applying new
-migrations (see below) — there's no server to manage or restart.
+## Security notes for whoever takes this over
 
-### Supabase project
+- Row-Level Security is enabled on every table; policies are reviewed
+  against Supabase's security advisor (no unresolved errors/warnings beyond
+  two intentional, low-risk exceptions documented at the top of
+  `04_rls_policies.sql`).
+- Two things are **dashboard-only settings**, not doable via migration —
+  worth turning on before this goes into real use:
+  - **Authentication → Policies**: enable "Leaked password protection" and
+    consider requiring MFA for the Owner role.
+  - **Database → Backups**: the free tier has limited backup retention. For
+    real financial data, upgrade to a plan with point-in-time recovery.
+- Financial data is never exposed to the `anon` (unauthenticated) role —
+  every table explicitly revokes `anon` access.
 
-- Project ref: `bvkpylpqdsdqnwunpaxy` (region `ap-south-1`)
-- To apply a new migration: add a timestamped `.sql` file to
-  `supabase/migrations/` and apply it (via the Supabase MCP tools, the
-  Supabase CLI, or pasting it into the SQL editor in Supabase Studio).
-- Auth → Providers: email/password is enabled by default. Email
-  confirmation is on by default; disable it in Supabase Studio → Authentication
-  → Providers → Email if you want instant sign-in without a confirmation
-  email during initial setup.
+## Roles
 
-## Handoff notes
+| Role | Access |
+|---|---|
+| Owner | Full access everywhere |
+| City Manager | Create/confirm transactions and parties in their assigned city |
+| Operator | Create transactions in their assigned city (enter as `pending`, needs Manager/Owner confirmation) |
+| Viewer | Read-only, everywhere |
+| Auditor | Read-only + audit log access |
 
-- All schema/business logic lives in SQL (`supabase/migrations/`), not in
-  application code — anyone with Postgres experience can read the full
-  accounting model in `20260816120000_core_tables.sql` and
-  `20260816120100_token_and_posting.sql` without needing to read the
-  frontend at all.
-- RLS policies are the actual security boundary — the frontend has no
-  special privileges beyond what any authenticated user's role grants.
-- `src/lib/types.ts` is hand-written to mirror the schema. If you use the
-  Supabase CLI locally, `npx supabase gen types typescript` will generate a
-  fully accurate version from the live schema.
+Assign a role/city by editing a user's row in the `profiles` table (Owner
+only, or directly in the Supabase dashboard).
