@@ -45,9 +45,9 @@ export default async function PartyDetailPage({ params }: { params: Promise<{ id
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold">
-            {party.name} <span className="text-zinc-400">— {city?.name ?? "Unknown city"}</span>
+            {party.name} <span className="text-muted">— {city?.name ?? "Unknown city"}</span>
           </h1>
-          <p className="text-sm text-zinc-500 dark:text-zinc-400">
+          <p className="text-sm text-muted">
             {PARTY_TYPE_LABELS[party.party_type]}
             {party.phone ? ` · ${party.phone}` : ""}
           </p>
@@ -56,7 +56,7 @@ export default async function PartyDetailPage({ params }: { params: Promise<{ id
       </div>
 
       <Card className="p-5">
-        <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
+        <p className="text-xs font-medium uppercase tracking-wide text-muted">
           Net {bl.label}
         </p>
         <p
@@ -71,7 +71,7 @@ export default async function PartyDetailPage({ params }: { params: Promise<{ id
         >
           {formatCompactMoney(bl.amount)}
         </p>
-        <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+        <p className="mt-1 text-sm text-muted">
           {bl.label === "Receivable" && `${party.name} owes you ${formatCompactMoney(bl.amount)}.`}
           {bl.label === "Payable" && `You owe ${party.name} ${formatCompactMoney(bl.amount)}.`}
           {bl.label === "Settled" && "Fully settled — no outstanding balance."}
@@ -86,7 +86,7 @@ export default async function PartyDetailPage({ params }: { params: Promise<{ id
 
       {party.notes && (
         <Card className="p-4">
-          <p className="text-xs font-medium uppercase text-zinc-500">Notes</p>
+          <p className="text-xs font-medium uppercase text-muted">Notes</p>
           <p className="mt-1 text-sm">{party.notes}</p>
         </Card>
       )}
@@ -97,19 +97,19 @@ export default async function PartyDetailPage({ params }: { params: Promise<{ id
         </CardHeader>
         <CardContent className="space-y-1">
           {transactions.length === 0 && (
-            <p className="py-6 text-center text-sm text-zinc-500">No transactions yet.</p>
+            <p className="py-6 text-center text-sm text-muted">No transactions yet.</p>
           )}
           {transactions.map((t) => (
             <Link
               key={t.id}
               href={`/transactions/${t.token}`}
-              className="flex items-center justify-between rounded-lg px-2 py-2 hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
+              className="flex items-center justify-between rounded-lg px-2 py-2 hover:bg-foreground/[0.04]"
             >
               <span>
                 <span className="block font-mono text-xs">
                   Token #{t.token} — {formatDate(t.created_at)}
                 </span>
-                <span className="text-xs text-zinc-500">
+                <span className="text-xs text-muted">
                   {TRANSACTION_TYPE_LABELS[t.transaction_type]} · {formatDateTime(t.created_at)}
                 </span>
               </span>

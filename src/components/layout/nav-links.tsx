@@ -26,7 +26,7 @@ const ITEMS = [
 export function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
   return (
-    <nav className="flex flex-col gap-1">
+    <nav className="flex flex-col gap-0.5">
       {ITEMS.map((item) => {
         const active = pathname === item.href || pathname.startsWith(item.href + "/");
         const Icon = item.icon;
@@ -36,13 +36,18 @@ export function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
             href={item.href}
             onClick={onNavigate}
             className={cn(
-              "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+              "group flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-150",
               active
-                ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-900"
-                : "text-zinc-600 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                ? "bg-accent text-accent-foreground shadow-sm shadow-accent/30"
+                : "text-muted hover:bg-foreground/[0.06] hover:text-foreground"
             )}
           >
-            <Icon className="h-4 w-4" />
+            <Icon
+              className={cn(
+                "h-4 w-4 transition-transform duration-150",
+                !active && "group-hover:scale-110"
+              )}
+            />
             {item.label}
           </Link>
         );

@@ -16,17 +16,17 @@ export default async function AuditLogPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-xl font-bold">Audit Log</h1>
-        <p className="text-sm text-zinc-500 dark:text-zinc-400">
+        <p className="text-sm text-muted">
           Every create, confirm, status change and reversal — append-only, never deleted.
         </p>
       </div>
 
       {logs.length === 0 ? (
-        <Card className="p-10 text-center text-sm text-zinc-500">No activity recorded yet.</Card>
+        <Card className="p-10 text-center text-sm text-muted">No activity recorded yet.</Card>
       ) : (
         <Card className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="border-b border-black/10 text-left text-xs uppercase text-zinc-500 dark:border-white/10">
+            <thead className="border-b border-border text-left text-xs uppercase text-muted">
               <tr>
                 <th className="px-4 py-3 font-medium">When</th>
                 <th className="px-4 py-3 font-medium">Entity</th>
@@ -41,19 +41,19 @@ export default async function AuditLogPage() {
                 return (
                   <tr
                     key={log.id}
-                    className="border-b border-black/5 last:border-0 dark:border-white/5"
+                    className="border-b border-border/70 last:border-0"
                   >
-                    <td className="px-4 py-3 text-xs text-zinc-500">
+                    <td className="px-4 py-3 text-xs text-muted">
                       {formatDateTime(log.created_at)}
                     </td>
-                    <td className="px-4 py-3 text-zinc-600 dark:text-zinc-300">
+                    <td className="px-4 py-3 text-foreground/80">
                       {log.entity_type}
                     </td>
                     <td className="px-4 py-3 font-medium">{log.action}</td>
-                    <td className="px-4 py-3 text-zinc-600 dark:text-zinc-300">
+                    <td className="px-4 py-3 text-foreground/80">
                       {actor?.full_name || actor?.email || "—"}
                     </td>
-                    <td className="px-4 py-3 text-xs text-zinc-500">{log.reason || "—"}</td>
+                    <td className="px-4 py-3 text-xs text-muted">{log.reason || "—"}</td>
                   </tr>
                 );
               })}

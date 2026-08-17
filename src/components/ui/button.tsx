@@ -4,11 +4,10 @@ import type { ButtonHTMLAttributes } from "react";
 
 const VARIANTS = {
   primary:
-    "bg-zinc-900 text-white hover:bg-zinc-700 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200",
-  secondary:
-    "bg-zinc-100 text-zinc-900 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-100 dark:hover:bg-zinc-700",
-  ghost: "hover:bg-zinc-100 dark:hover:bg-zinc-800",
-  destructive: "bg-rose-600 text-white hover:bg-rose-700",
+    "bg-accent text-accent-foreground shadow-sm shadow-accent/30 hover:brightness-110 active:brightness-95",
+  secondary: "bg-foreground/[0.06] text-foreground hover:bg-foreground/[0.1] ring-1 ring-inset ring-border",
+  ghost: "text-muted hover:bg-foreground/[0.06] hover:text-foreground",
+  destructive: "bg-rose-600 text-white shadow-sm shadow-rose-600/30 hover:bg-rose-500 active:bg-rose-700",
 };
 
 const SIZES = {
@@ -23,6 +22,9 @@ type Common = {
   className?: string;
 };
 
+const BASE =
+  "inline-flex items-center justify-center gap-2 rounded-lg font-medium transition-all duration-150 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background";
+
 export function Button({
   variant = "primary",
   size = "md",
@@ -30,15 +32,7 @@ export function Button({
   ...props
 }: Common & ButtonHTMLAttributes<HTMLButtonElement>) {
   return (
-    <button
-      className={cn(
-        "inline-flex items-center justify-center gap-2 rounded-lg font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50",
-        VARIANTS[variant],
-        SIZES[size],
-        className
-      )}
-      {...props}
-    />
+    <button className={cn(BASE, VARIANTS[variant], SIZES[size], className)} {...props} />
   );
 }
 
@@ -50,15 +44,6 @@ export function LinkButton({
   ...props
 }: Common & { href: string } & Omit<React.ComponentProps<typeof Link>, "href" | "className">) {
   return (
-    <Link
-      href={href}
-      className={cn(
-        "inline-flex items-center justify-center gap-2 rounded-lg font-medium transition-colors",
-        VARIANTS[variant],
-        SIZES[size],
-        className
-      )}
-      {...props}
-    />
+    <Link href={href} className={cn(BASE, VARIANTS[variant], SIZES[size], className)} {...props} />
   );
 }

@@ -1,0 +1,102 @@
+import indiaMap from "@svg-maps/india";
+
+export type IndiaLocation = { id: string; name: string; path: string };
+
+export const INDIA_VIEWBOX = indiaMap.viewBox;
+export const INDIA_LOCATIONS = indiaMap.locations as IndiaLocation[];
+
+// Free-text `city.state` values (typed by the user) mapped to the real
+// @svg-maps/india location id, so a city can be placed inside its actual
+// state's boundary rather than a hand-guessed pixel position. Covers full
+// names, common abbreviations, and a few frequent alternate spellings.
+const ALIASES: Record<string, string> = {
+  "andaman and nicobar islands": "an",
+  "andaman & nicobar islands": "an",
+  "andaman and nicobar": "an",
+  andhra: "ap",
+  "andhra pradesh": "ap",
+  ap: "ap",
+  "arunachal pradesh": "ar",
+  ar: "ar",
+  assam: "as",
+  as: "as",
+  bihar: "br",
+  br: "br",
+  chandigarh: "ch",
+  ch: "ch",
+  chhattisgarh: "ct",
+  chattisgarh: "ct",
+  ct: "ct",
+  "dadra and nagar haveli": "dn",
+  "dadra & nagar haveli": "dn",
+  dn: "dn",
+  "daman and diu": "dd",
+  "daman & diu": "dd",
+  dd: "dd",
+  delhi: "dl",
+  "new delhi": "dl",
+  ncr: "dl",
+  dl: "dl",
+  goa: "ga",
+  ga: "ga",
+  gujarat: "gj",
+  gj: "gj",
+  haryana: "hr",
+  hr: "hr",
+  "himachal pradesh": "hp",
+  hp: "hp",
+  "jammu and kashmir": "jk",
+  "jammu & kashmir": "jk",
+  "j&k": "jk",
+  jk: "jk",
+  jharkhand: "jh",
+  jh: "jh",
+  karnataka: "ka",
+  ka: "ka",
+  kerala: "kl",
+  kl: "kl",
+  lakshadweep: "ld",
+  ld: "ld",
+  "madhya pradesh": "mp",
+  mp: "mp",
+  maharashtra: "mh",
+  mh: "mh",
+  manipur: "mn",
+  mn: "mn",
+  meghalaya: "ml",
+  mizoram: "mz",
+  mz: "mz",
+  nagaland: "nl",
+  nl: "nl",
+  odisha: "or",
+  orissa: "or",
+  or: "or",
+  puducherry: "py",
+  pondicherry: "py",
+  py: "py",
+  punjab: "pb",
+  pb: "pb",
+  rajasthan: "rj",
+  rj: "rj",
+  sikkim: "sk",
+  sk: "sk",
+  "tamil nadu": "tn",
+  tn: "tn",
+  telangana: "tg",
+  tg: "tg",
+  tripura: "tr",
+  tr: "tr",
+  "uttar pradesh": "up",
+  up: "up",
+  uttarakhand: "ut",
+  uttaranchal: "ut",
+  ut: "ut",
+  "west bengal": "wb",
+  wb: "wb",
+};
+
+export function stateIdForName(state: string | null | undefined): string | null {
+  if (!state) return null;
+  const key = state.trim().toLowerCase();
+  return ALIASES[key] ?? null;
+}

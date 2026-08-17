@@ -117,8 +117,8 @@ export function CreateTransactionForm({ cities, parties }: { cities: City[]; par
       </div>
 
       {(needsDestination || needsCounterparty) && (
-        <div className="space-y-4 rounded-lg border border-dashed border-black/10 p-4 dark:border-white/10">
-          <p className="text-xs font-medium uppercase text-zinc-500">Optional / Cross-City Details</p>
+        <div className="space-y-4 rounded-lg border border-dashed border-border p-4">
+          <p className="text-xs font-medium uppercase text-muted">Optional / Cross-City Details</p>
 
           {needsDestination && (
             <div>

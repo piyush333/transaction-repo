@@ -20,7 +20,7 @@ export default async function PartiesPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold">Parties</h1>
-          <p className="text-sm text-zinc-500 dark:text-zinc-400">
+          <p className="text-sm text-muted">
             Every person, business, or agent has an individual ledger.
           </p>
         </div>
@@ -28,13 +28,13 @@ export default async function PartiesPage() {
       </div>
 
       {parties.length === 0 ? (
-        <Card className="p-10 text-center text-sm text-zinc-500">
+        <Card className="p-10 text-center text-sm text-muted">
           No parties yet. Add your first party to start recording transactions.
         </Card>
       ) : (
         <Card className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="border-b border-black/10 text-left text-xs uppercase text-zinc-500 dark:border-white/10">
+            <thead className="border-b border-border text-left text-xs uppercase text-muted">
               <tr>
                 <th className="px-4 py-3 font-medium">Party</th>
                 <th className="px-4 py-3 font-medium">City</th>
@@ -51,22 +51,22 @@ export default async function PartiesPage() {
                 return (
                   <tr
                     key={p.id}
-                    className="border-b border-black/5 last:border-0 hover:bg-zinc-50 dark:border-white/5 dark:hover:bg-zinc-800/40"
+                    className="border-b border-border/70 last:border-0 hover:bg-foreground/[0.03] transition-colors"
                   >
                     <td className="px-4 py-3">
                       <Link href={`/parties/${p.id}`} className="font-medium hover:underline">
                         {p.name}
                       </Link>
-                      <p className="text-xs text-zinc-500">{p.phone}</p>
+                      <p className="text-xs text-muted">{p.phone}</p>
                     </td>
-                    <td className="px-4 py-3 text-zinc-600 dark:text-zinc-300">
+                    <td className="px-4 py-3 text-foreground/80">
                       {city?.name ?? "—"}
                     </td>
                     <td className="px-4 py-3 tabular-nums">{formatCompactMoney(bl.amount)}</td>
                     <td className="px-4 py-3">
                       <Badge tone={bl.tone}>{bl.label}</Badge>
                     </td>
-                    <td className="px-4 py-3 text-xs text-zinc-500">
+                    <td className="px-4 py-3 text-xs text-muted">
                       {bal?.last_transaction_at ? formatDateTime(bal.last_transaction_at) : "—"}
                     </td>
                   </tr>

@@ -1,4 +1,4 @@
-import { Card } from "@/components/ui/card";
+import { InteractiveCard } from "@/components/ui/card";
 import { getCurrentProfile } from "@/lib/queries";
 import { BarChart3, ScaleIcon, ShieldCheck, Building2, Users } from "lucide-react";
 import Link from "next/link";
@@ -23,10 +23,10 @@ export default async function MorePage() {
           const Icon = item.icon;
           return (
             <Link key={item.href} href={item.href}>
-              <Card className="flex flex-col items-center gap-2 p-5 text-center hover:shadow-md">
-                <Icon className="h-5 w-5" />
+              <InteractiveCard className="flex flex-col items-center gap-2 p-5 text-center">
+                <Icon className="h-5 w-5 text-accent" />
                 <span className="text-sm font-medium">{item.label}</span>
-              </Card>
+              </InteractiveCard>
             </Link>
           );
         })}

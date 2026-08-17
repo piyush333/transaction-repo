@@ -6,7 +6,7 @@ export default function NewCityPage() {
     <div className="mx-auto max-w-lg space-y-6">
       <div>
         <h1 className="text-xl font-bold">Add City</h1>
-        <p className="text-sm text-zinc-500 dark:text-zinc-400">
+        <p className="text-sm text-muted">
           Only the Owner can add or edit cities.
         </p>
       </div>

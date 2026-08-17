@@ -54,9 +54,16 @@ blocked at the trigger level on `transactions`, `transaction_entries`, and
   party-to-party transfers, and reconciliation adjustments.
 - Automatic double-entry ledger + balance engine (cities, parties, city ×
   party, city-to-city obligations).
-- Dashboard: KPI cards, an India map with obligation lines between cities,
+- Dashboard: KPI cards, an interactive India map (real state boundaries via
+  `@svg-maps/india`, not a hand-drawn outline — pan/drag, scroll-to-zoom
+  anchored under the cursor, +/- controls, clickable city markers sized by
+  volume and colored by balance) with obligation lines between cities,
   balance/receivable-payable/volume/exposure graphs, top outstanding
   parties, recent tokens.
+- Dark-first UI (toggle to light in the sidebar; preference persists per
+  browser) with a small token-based design system
+  (`src/app/globals.css` → `--background`, `--surface`, `--accent`, etc.)
+  so every component stays consistent instead of hardcoded colors.
 - Full token drill-down (ledger entries, related transactions, modification
   history) and global search (token, party, city, phone, amount).
 - Reconciliation view (🟢 matched / 🟡 pending / 🔴 discrepancy).

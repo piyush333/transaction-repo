@@ -54,10 +54,16 @@ function LoginForm() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 px-4 dark:bg-zinc-950">
-      <div className="w-full max-w-sm rounded-xl border border-black/10 bg-white p-6 shadow-sm dark:border-white/10 dark:bg-zinc-900">
-        <h1 className="text-lg font-bold">Settlement Ledger</h1>
-        <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-background px-4">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,var(--accent)_0%,transparent_35%),radial-gradient(circle_at_80%_70%,var(--accent)_0%,transparent_30%)] opacity-[0.08]" />
+      <div className="relative w-full max-w-sm rounded-2xl border border-border bg-surface p-6 shadow-xl shadow-black/[0.03] dark:shadow-black/30">
+        <div className="mb-5 flex items-center gap-2.5">
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent text-accent-foreground shadow-sm shadow-accent/30">
+            <span className="text-sm font-bold">S</span>
+          </div>
+          <h1 className="text-lg font-bold tracking-tight">Settlement Ledger</h1>
+        </div>
+        <p className="text-sm text-muted">
           {mode === "sign-in" ? "Sign in to your account." : "Create the first owner account."}
         </p>
 
@@ -105,7 +111,7 @@ function LoginForm() {
 
         <button
           onClick={() => setMode(mode === "sign-in" ? "sign-up" : "sign-in")}
-          className="mt-4 w-full text-center text-sm text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-100"
+          className="mt-4 w-full text-center text-sm text-muted transition-colors hover:text-foreground"
         >
           {mode === "sign-in"
             ? "First time here? Create an account"

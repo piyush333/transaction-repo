@@ -44,9 +44,9 @@ export default async function CityDetailPage({ params }: { params: Promise<{ id:
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold">
-            {city.name} <span className="text-zinc-400">({city.code})</span>
+            {city.name} <span className="text-muted">({city.code})</span>
           </h1>
-          <p className="text-sm text-zinc-500 dark:text-zinc-400">
+          <p className="text-sm text-muted">
             {city.state ? `${city.state}, ` : ""}
             {city.country} · {city.currency}
           </p>
@@ -80,7 +80,7 @@ export default async function CityDetailPage({ params }: { params: Promise<{ id:
           </CardHeader>
           <CardContent className="space-y-2">
             {todaysTxns.length === 0 && (
-              <p className="py-4 text-center text-sm text-zinc-500">No transactions today.</p>
+              <p className="py-4 text-center text-sm text-muted">No transactions today.</p>
             )}
             {todaysTxns.map((t) => (
               <TxnRow key={t.id} t={t} />
@@ -94,7 +94,7 @@ export default async function CityDetailPage({ params }: { params: Promise<{ id:
           </CardHeader>
           <CardContent className="space-y-2">
             {pending.length === 0 && (
-              <p className="py-4 text-center text-sm text-zinc-500">Nothing pending.</p>
+              <p className="py-4 text-center text-sm text-muted">Nothing pending.</p>
             )}
             {pending.map((t) => (
               <TxnRow key={t.id} t={t} />
@@ -110,7 +110,7 @@ export default async function CityDetailPage({ params }: { params: Promise<{ id:
           </CardHeader>
           <CardContent className="space-y-2">
             {partyBalances.length === 0 && (
-              <p className="py-4 text-center text-sm text-zinc-500">No party activity yet.</p>
+              <p className="py-4 text-center text-sm text-muted">No party activity yet.</p>
             )}
             {partyBalances.slice(0, 10).map((pb) => {
               const bl = balanceLabel(pb.balance);
@@ -118,7 +118,7 @@ export default async function CityDetailPage({ params }: { params: Promise<{ id:
                 <Link
                   key={pb.party_id}
                   href={`/parties/${pb.party_id}`}
-                  className="flex items-center justify-between rounded-lg px-2 py-2 hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
+                  className="flex items-center justify-between rounded-lg px-2 py-2 hover:bg-foreground/[0.04]"
                 >
                   <span className="text-sm font-medium">{pb.party!.name}</span>
                   <span className="flex items-center gap-2">
@@ -137,7 +137,7 @@ export default async function CityDetailPage({ params }: { params: Promise<{ id:
           </CardHeader>
           <CardContent className="space-y-2">
             {transactions.length === 0 && (
-              <p className="py-4 text-center text-sm text-zinc-500">No transactions yet.</p>
+              <p className="py-4 text-center text-sm text-muted">No transactions yet.</p>
             )}
             {transactions.slice(0, 10).map((t) => (
               <TxnRow key={t.id} t={t} />
@@ -157,11 +157,11 @@ function TxnRow({
   return (
     <Link
       href={`/transactions/${t.token}`}
-      className="flex items-center justify-between rounded-lg px-2 py-2 hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
+      className="flex items-center justify-between rounded-lg px-2 py-2 hover:bg-foreground/[0.04]"
     >
       <span>
         <span className="block font-mono text-xs">{t.token}</span>
-        <span className="text-xs text-zinc-500">
+        <span className="text-xs text-muted">
           {TRANSACTION_TYPE_LABELS[t.transaction_type]} · {formatDateTime(t.created_at)}
         </span>
       </span>

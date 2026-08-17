@@ -34,7 +34,7 @@ export default async function GraphsPage({
     <div className="space-y-6">
       <div>
         <h1 className="text-xl font-bold">Graphs</h1>
-        <p className="text-sm text-zinc-500 dark:text-zinc-400">
+        <p className="text-sm text-muted">
           Balance, volume, and exposure — computed live from the ledger.
         </p>
       </div>
@@ -55,8 +55,8 @@ export default async function GraphsPage({
                 className={
                   "rounded-full px-2.5 py-1 " +
                   (days === r.value
-                    ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-900"
-                    : "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300")
+                    ? "bg-accent text-accent-foreground shadow-sm shadow-accent/30"
+                    : "bg-foreground/[0.06] text-muted hover:bg-foreground/[0.1] transition-colors")
                 }
               >
                 {r.label}
@@ -66,7 +66,7 @@ export default async function GraphsPage({
         </CardHeader>
         <CardContent>
           {volume.length === 0 ? (
-            <p className="py-10 text-center text-sm text-zinc-500">No transactions in this range.</p>
+            <p className="py-10 text-center text-sm text-muted">No transactions in this range.</p>
           ) : (
             <VolumeChart data={volume.map((v) => ({ day: formatDate(v.day), volume: v.volume }))} />
           )}
@@ -80,7 +80,7 @@ export default async function GraphsPage({
           </CardHeader>
           <CardContent>
             {cityBalances.length === 0 ? (
-              <p className="py-10 text-center text-sm text-zinc-500">No cities yet.</p>
+              <p className="py-10 text-center text-sm text-muted">No cities yet.</p>
             ) : (
               <BalanceByCityChart data={cityBalances.map((c) => ({ name: c.code, balance: c.balance }))} />
             )}
@@ -93,7 +93,7 @@ export default async function GraphsPage({
           </CardHeader>
           <CardContent>
             {cityBalances.length === 0 ? (
-              <p className="py-10 text-center text-sm text-zinc-500">No cities yet.</p>
+              <p className="py-10 text-center text-sm text-muted">No cities yet.</p>
             ) : (
               <ReceivablePayableChart
                 data={cityBalances.map((c) => {
@@ -112,7 +112,7 @@ export default async function GraphsPage({
         </CardHeader>
         <CardContent>
           {partyExposure.length === 0 ? (
-            <p className="py-10 text-center text-sm text-zinc-500">No party activity yet.</p>
+            <p className="py-10 text-center text-sm text-muted">No party activity yet.</p>
           ) : (
             <PartyExposureChart
               data={partyExposure.map((p) => ({ name: p.name, exposure: p.exposure, status: p.status }))}

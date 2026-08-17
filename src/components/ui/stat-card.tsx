@@ -16,23 +16,40 @@ export function StatCard({
   icon?: ReactNode;
 }) {
   return (
-    <Card className="p-4">
-      <div className="flex items-start justify-between">
-        <p className="text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
-          {label}
-        </p>
-        {icon && <div className="text-zinc-400">{icon}</div>}
+    <Card className="group relative overflow-hidden p-4 transition-all duration-150 hover:border-accent/30">
+      <div
+        className={cn(
+          "pointer-events-none absolute -right-6 -top-6 h-20 w-20 rounded-full opacity-[0.12] blur-2xl transition-opacity duration-150 group-hover:opacity-20",
+          tone === "positive" && "bg-emerald-500",
+          tone === "negative" && "bg-rose-500",
+          tone === "neutral" && "bg-accent"
+        )}
+      />
+      <div className="relative flex items-start justify-between">
+        <p className="text-xs font-medium uppercase tracking-wide text-muted">{label}</p>
+        {icon && (
+          <div
+            className={cn(
+              "flex h-7 w-7 items-center justify-center rounded-md",
+              tone === "positive" && "bg-emerald-500/12 text-emerald-500",
+              tone === "negative" && "bg-rose-500/12 text-rose-500",
+              tone === "neutral" && "bg-accent/12 text-accent"
+            )}
+          >
+            {icon}
+          </div>
+        )}
       </div>
       <p
         className={cn(
-          "mt-2 text-2xl font-semibold tabular-nums",
+          "relative mt-2 text-2xl font-semibold tabular-nums",
           tone === "positive" && "text-emerald-600 dark:text-emerald-400",
           tone === "negative" && "text-rose-600 dark:text-rose-400"
         )}
       >
         {value}
       </p>
-      {sub && <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">{sub}</p>}
+      {sub && <p className="relative mt-1 text-xs text-muted">{sub}</p>}
     </Card>
   );
 }

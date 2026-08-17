@@ -16,12 +16,12 @@ export function SearchBar() {
 
   return (
     <form onSubmit={onSubmit} className="relative w-full max-w-md">
-      <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
+      <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
       <input
         value={q}
         onChange={(e) => setQ(e.target.value)}
         placeholder="Search token, party, city, phone, amount..."
-        className="w-full rounded-lg border border-black/10 bg-white py-2 pl-9 pr-3 text-sm outline-none focus:border-zinc-400 dark:border-white/10 dark:bg-zinc-900 dark:focus:border-zinc-500"
+        className="w-full rounded-lg border border-border bg-background py-2 pl-9 pr-3 text-sm text-foreground outline-none transition-colors placeholder:text-muted focus:border-accent focus:ring-2 focus:ring-ring"
       />
     </form>
   );

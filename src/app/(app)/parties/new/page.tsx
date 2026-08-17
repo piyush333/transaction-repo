@@ -9,13 +9,13 @@ export default async function NewPartyPage() {
     <div className="mx-auto max-w-lg space-y-6">
       <div>
         <h1 className="text-xl font-bold">Add Party</h1>
-        <p className="text-sm text-zinc-500 dark:text-zinc-400">
+        <p className="text-sm text-muted">
           Every party gets its own ledger, tracked automatically from transactions.
         </p>
       </div>
       <Card className="p-6">
         {cities.length === 0 ? (
-          <p className="text-sm text-zinc-500">Add a city first before adding parties.</p>
+          <p className="text-sm text-muted">Add a city first before adding parties.</p>
         ) : (
           <CreatePartyForm cities={cities} />
         )}

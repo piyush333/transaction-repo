@@ -63,7 +63,7 @@ export default async function TransactionDetailPage({
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="font-mono text-xl font-bold">{transaction.token}</h1>
-          <p className="text-sm text-zinc-500 dark:text-zinc-400">
+          <p className="text-sm text-muted">
             {TRANSACTION_TYPE_LABELS[transaction.transaction_type]} ·{" "}
             {formatDateTime(transaction.created_at)}
           </p>
@@ -74,7 +74,7 @@ export default async function TransactionDetailPage({
       </div>
 
       <Card className="p-5">
-        <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">Amount</p>
+        <p className="text-xs font-medium uppercase tracking-wide text-muted">Amount</p>
         <p className="mt-1 text-3xl font-bold tabular-nums">
           {formatCompactMoney(transaction.amount, transaction.currency)}
         </p>
@@ -145,7 +145,7 @@ export default async function TransactionDetailPage({
         <CardContent className="space-y-1">
           {entries.map((e) => (
             <div key={e.id} className="flex items-center justify-between text-sm">
-              <span className="text-zinc-500">
+              <span className="text-muted">
                 {e.entry_type === "city_cash" ? "City Cash" : "Party"} · {e.direction}
               </span>
               <span className="tabular-nums">{formatCompactMoney(e.amount, e.currency)}</span>
@@ -189,7 +189,7 @@ export default async function TransactionDetailPage({
             <ReverseTransactionForm transactionId={transaction.id} />
           )}
           {!canManage && (
-            <p className="text-sm text-zinc-500">
+            <p className="text-sm text-muted">
               You don&apos;t have permission to manage this transaction.
             </p>
           )}
@@ -201,12 +201,12 @@ export default async function TransactionDetailPage({
           <CardTitle>Modification History</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          {auditLogs.length === 0 && <p className="text-sm text-zinc-500">No history recorded.</p>}
+          {auditLogs.length === 0 && <p className="text-sm text-muted">No history recorded.</p>}
           {auditLogs.map((log) => (
-            <div key={log.id} className="border-l-2 border-zinc-200 pl-3 text-sm dark:border-zinc-700">
+            <div key={log.id} className="border-l-2 border-border pl-3 text-sm">
               <p className="font-medium">{log.action}</p>
-              <p className="text-xs text-zinc-500">{formatDateTime(log.created_at)}</p>
-              {log.reason && <p className="mt-1 text-xs text-zinc-500">{log.reason}</p>}
+              <p className="text-xs text-muted">{formatDateTime(log.created_at)}</p>
+              {log.reason && <p className="mt-1 text-xs text-muted">{log.reason}</p>}
             </div>
           ))}
         </CardContent>
@@ -218,7 +218,7 @@ export default async function TransactionDetailPage({
 function Detail({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <dt className="text-xs font-medium uppercase text-zinc-500">{label}</dt>
+      <dt className="text-xs font-medium uppercase text-muted">{label}</dt>
       <dd className="mt-0.5 text-sm">{children}</dd>
     </div>
   );

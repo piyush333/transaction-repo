@@ -15,7 +15,7 @@ export default async function SearchPage({
     return (
       <div className="space-y-2">
         <h1 className="text-xl font-bold">Search</h1>
-        <p className="text-sm text-zinc-500">
+        <p className="text-sm text-muted">
           Use the search bar above to find a token, party, city, phone number, or amount.
         </p>
       </div>
@@ -30,7 +30,7 @@ export default async function SearchPage({
     <div className="space-y-6">
       <div>
         <h1 className="text-xl font-bold">Search results for &ldquo;{q}&rdquo;</h1>
-        <p className="text-sm text-zinc-500 dark:text-zinc-400">{totalResults} result(s)</p>
+        <p className="text-sm text-muted">{totalResults} result(s)</p>
       </div>
 
       {results.transactions.length > 0 && (
@@ -43,11 +43,11 @@ export default async function SearchPage({
               <Link
                 key={t.id}
                 href={`/transactions/${t.token}`}
-                className="flex items-center justify-between rounded-lg px-2 py-2 hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
+                className="flex items-center justify-between rounded-lg px-2 py-2 hover:bg-foreground/[0.04]"
               >
                 <span>
                   <span className="block font-mono text-xs">{t.token}</span>
-                  <span className="text-xs text-zinc-500">
+                  <span className="text-xs text-muted">
                     {TRANSACTION_TYPE_LABELS[t.transaction_type]} · {formatDateTime(t.created_at)}
                   </span>
                 </span>
@@ -73,11 +73,11 @@ export default async function SearchPage({
                 <Link
                   key={p.id}
                   href={`/parties/${p.id}`}
-                  className="flex items-center justify-between rounded-lg px-2 py-2 hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
+                  className="flex items-center justify-between rounded-lg px-2 py-2 hover:bg-foreground/[0.04]"
                 >
                   <span>
                     <span className="block text-sm font-medium">{p.name}</span>
-                    <span className="text-xs text-zinc-500">{p.phone}</span>
+                    <span className="text-xs text-muted">{p.phone}</span>
                   </span>
                   <span className="flex items-center gap-2">
                     <span className="text-sm tabular-nums">{formatCompactMoney(bl.amount)}</span>
@@ -100,10 +100,10 @@ export default async function SearchPage({
               <Link
                 key={c.id}
                 href={`/cities/${c.id}`}
-                className="flex items-center justify-between rounded-lg px-2 py-2 hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
+                className="flex items-center justify-between rounded-lg px-2 py-2 hover:bg-foreground/[0.04]"
               >
                 <span className="text-sm font-medium">{c.name}</span>
-                <span className="text-xs text-zinc-500">{c.code}</span>
+                <span className="text-xs text-muted">{c.code}</span>
               </Link>
             ))}
           </CardContent>
@@ -111,7 +111,7 @@ export default async function SearchPage({
       )}
 
       {totalResults === 0 && (
-        <Card className="p-10 text-center text-sm text-zinc-500">
+        <Card className="p-10 text-center text-sm text-muted">
           Nothing matched &ldquo;{q}&rdquo;.
         </Card>
       )}

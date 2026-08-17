@@ -48,7 +48,7 @@ export function CreatePartyForm({ cities }: { cities: City[] }) {
       <div>
         <Label htmlFor="opening_balance">Opening Balance</Label>
         <Input id="opening_balance" name="opening_balance" type="number" step="0.01" defaultValue={0} />
-        <p className="mt-1 text-xs text-zinc-500">
+        <p className="mt-1 text-xs text-muted">
           Positive = party already owes you. Negative = you already owe the party.
         </p>
       </div>

@@ -28,12 +28,14 @@ export default async function DashboardPage() {
   ]);
 
   const rpByCity = new Map(cityRP.map((r) => [r.city_id, r]));
+  const stateByCity = new Map(cities.map((c) => [c.id, c.state]));
   const mapCities: MapCity[] = cityBalances.map((c) => {
     const rp = rpByCity.get(c.city_id);
     return {
       id: c.city_id,
       name: c.name,
       code: c.code,
+      state: stateByCity.get(c.city_id) ?? null,
       balance: c.balance,
       receivable: rp?.receivable ?? 0,
       payable: rp?.payable ?? 0,
@@ -51,7 +53,7 @@ export default async function DashboardPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold">Dashboard</h1>
-          <p className="text-sm text-zinc-500 dark:text-zinc-400">
+          <p className="text-sm text-muted">
             Where is my money, and who owes whom.
           </p>
         </div>
@@ -88,7 +90,7 @@ export default async function DashboardPage() {
           </CardHeader>
           <CardContent>
             {cities.length === 0 ? (
-              <p className="py-10 text-center text-sm text-zinc-500">
+              <p className="py-10 text-center text-sm text-muted">
                 Add a city to see it here.
               </p>
             ) : (
@@ -103,7 +105,7 @@ export default async function DashboardPage() {
           </CardHeader>
           <CardContent>
             {cityBalances.length === 0 ? (
-              <p className="py-10 text-center text-sm text-zinc-500">No cities yet.</p>
+              <p className="py-10 text-center text-sm text-muted">No cities yet.</p>
             ) : (
               <BalanceByCityChart
                 data={cityBalances.map((c) => ({ name: c.code, balance: c.balance }))}
@@ -118,7 +120,7 @@ export default async function DashboardPage() {
           </CardHeader>
           <CardContent>
             {cityBalances.length === 0 ? (
-              <p className="py-10 text-center text-sm text-zinc-500">No cities yet.</p>
+              <p className="py-10 text-center text-sm text-muted">No cities yet.</p>
             ) : (
               <ReceivablePayableChart
                 data={cityBalances.map((c) => {
@@ -135,13 +137,13 @@ export default async function DashboardPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Top Outstanding Parties</CardTitle>
-            <Link href="/parties" className="text-xs font-medium text-zinc-500 hover:underline">
+            <Link href="/parties" className="text-xs font-medium text-muted hover:underline">
               View all
             </Link>
           </CardHeader>
           <CardContent className="space-y-2">
             {topParties.length === 0 && (
-              <p className="py-6 text-center text-sm text-zinc-500">No parties yet.</p>
+              <p className="py-6 text-center text-sm text-muted">No parties yet.</p>
             )}
             {topParties.map((p) => {
               const bl = balanceLabel(p.balance);
@@ -149,7 +151,7 @@ export default async function DashboardPage() {
                 <Link
                   key={p.party_id}
                   href={`/parties/${p.party_id}`}
-                  className="flex items-center justify-between rounded-lg px-2 py-2 hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
+                  className="flex items-center justify-between rounded-lg px-2 py-2 hover:bg-foreground/[0.04]"
                 >
                   <span className="text-sm font-medium">{p.name}</span>
                   <span className="flex items-center gap-2">
@@ -165,23 +167,23 @@ export default async function DashboardPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Recent Tokens</CardTitle>
-            <Link href="/transactions" className="text-xs font-medium text-zinc-500 hover:underline">
+            <Link href="/transactions" className="text-xs font-medium text-muted hover:underline">
               View all
             </Link>
           </CardHeader>
           <CardContent className="space-y-2">
             {recentTxns.length === 0 && (
-              <p className="py-6 text-center text-sm text-zinc-500">No transactions yet.</p>
+              <p className="py-6 text-center text-sm text-muted">No transactions yet.</p>
             )}
             {recentTxns.map((t) => (
               <Link
                 key={t.id}
                 href={`/transactions/${t.token}`}
-                className="flex items-center justify-between rounded-lg px-2 py-2 hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
+                className="flex items-center justify-between rounded-lg px-2 py-2 hover:bg-foreground/[0.04]"
               >
                 <span>
                   <span className="block font-mono text-xs">{t.token}</span>
-                  <span className="text-xs text-zinc-500">
+                  <span className="text-xs text-muted">
                     {TRANSACTION_TYPE_LABELS[t.transaction_type]} · {formatDateTime(t.created_at)}
                   </span>
                 </span>
