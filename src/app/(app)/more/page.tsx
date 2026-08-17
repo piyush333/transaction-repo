@@ -1,6 +1,6 @@
 import { InteractiveCard } from "@/components/ui/card";
 import { getCurrentProfile } from "@/lib/queries";
-import { BarChart3, ScaleIcon, ShieldCheck, Building2, Users } from "lucide-react";
+import { BarChart3, ScaleIcon, ShieldCheck, Building2, Users, MessageCircle } from "lucide-react";
 import Link from "next/link";
 
 export default async function MorePage() {
@@ -8,6 +8,7 @@ export default async function MorePage() {
   const canSeeAudit = profile && ["owner", "auditor"].includes(profile.role);
 
   const items = [
+    { href: "/chat", label: "Chat", icon: MessageCircle },
     { href: "/graphs", label: "Graphs", icon: BarChart3 },
     { href: "/reconciliation", label: "Reconciliation", icon: ScaleIcon },
     ...(canSeeAudit ? [{ href: "/audit-log", label: "Audit Log", icon: ShieldCheck }] : []),

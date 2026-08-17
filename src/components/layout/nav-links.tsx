@@ -9,6 +9,7 @@ import {
   ScaleIcon,
   ShieldCheck,
   BarChart3,
+  MessageCircle,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -21,6 +22,7 @@ const ITEMS = [
   { href: "/graphs", label: "Graphs", icon: BarChart3 },
   { href: "/reconciliation", label: "Reconciliation", icon: ScaleIcon },
   { href: "/audit-log", label: "Audit Log", icon: ShieldCheck },
+  { href: "/chat", label: "Chat", icon: MessageCircle },
 ];
 
 export function NavLinks({ onNavigate }: { onNavigate?: () => void }) {

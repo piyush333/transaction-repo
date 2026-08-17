@@ -6,6 +6,7 @@ import type {
   CityReceivablePayable,
   CityToCityObligation,
   DashboardKpis,
+  Message,
   Party,
   PartyBalance,
   PartyExposureRow,
@@ -212,6 +213,16 @@ export async function getAllProfiles(): Promise<Profile[]> {
   const supabase = await createClient();
   const { data } = await supabase.from("profiles").select("*").order("email");
   return (data as Profile[]) ?? [];
+}
+
+export async function getRecentMessages(limit = 100): Promise<Message[]> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("messages")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  return ((data as Message[]) ?? []).reverse();
 }
 
 export async function searchAll(q: string) {

@@ -101,6 +101,13 @@ export interface TransactionEntry {
   created_at: string;
 }
 
+export interface Message {
+  id: string;
+  sender_id: string;
+  body: string;
+  created_at: string;
+}
+
 export interface AuditLog {
   id: string;
   entity_type: string;

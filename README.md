@@ -60,6 +60,10 @@ blocked at the trigger level on `transactions`, `transaction_entries`, and
   volume and colored by balance) with obligation lines between cities,
   balance/receivable-payable/volume/exposure graphs, top outstanding
   parties, recent tokens.
+- Internal chat (`/chat`) — one shared channel for everyone with an
+  account, live via Supabase Realtime. Deliberately minimal: no threads,
+  groups, attachments, or edit/delete; built for the two people actually
+  running this ledger to coordinate, not as a general messaging platform.
 - Dark-first UI (toggle to light in the sidebar; preference persists per
   browser) with a small token-based design system
   (`src/app/globals.css` → `--background`, `--surface`, `--accent`, etc.)
