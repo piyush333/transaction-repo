@@ -1,5 +1,6 @@
 import { CreatePartyForm } from "@/components/forms/create-party-form";
 import { Card } from "@/components/ui/card";
+import { LinkButton } from "@/components/ui/button";
 import { getCities } from "@/lib/queries";
 
 export default async function NewPartyPage() {
@@ -15,7 +16,10 @@ export default async function NewPartyPage() {
       </div>
       <Card className="p-6">
         {cities.length === 0 ? (
-          <p className="text-sm text-muted">Add a city first before adding parties.</p>
+          <div className="space-y-3 text-center">
+            <p className="text-sm text-muted">Add a city first before adding parties.</p>
+            <LinkButton href="/cities/new">Add City</LinkButton>
+          </div>
         ) : (
           <CreatePartyForm cities={cities} />
         )}

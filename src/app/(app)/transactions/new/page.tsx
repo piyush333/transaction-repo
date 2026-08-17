@@ -1,5 +1,6 @@
 import { CreateTransactionForm } from "@/components/forms/create-transaction-form";
 import { Card } from "@/components/ui/card";
+import { LinkButton } from "@/components/ui/button";
 import { getCities, getParties } from "@/lib/queries";
 
 export default async function NewTransactionPage() {
@@ -15,9 +16,19 @@ export default async function NewTransactionPage() {
       </div>
       <Card className="p-6">
         {cities.length === 0 ? (
-          <p className="text-sm text-muted">Add a city first.</p>
+          <div className="space-y-3 text-center">
+            <p className="text-sm text-muted">
+              You need at least one city before you can record a transaction.
+            </p>
+            <LinkButton href="/cities/new">Add City</LinkButton>
+          </div>
         ) : parties.length === 0 ? (
-          <p className="text-sm text-muted">Add a party first.</p>
+          <div className="space-y-3 text-center">
+            <p className="text-sm text-muted">
+              You need at least one party before you can record a transaction.
+            </p>
+            <LinkButton href="/parties/new">Add Party</LinkButton>
+          </div>
         ) : (
           <CreateTransactionForm cities={cities} parties={parties} />
         )}
