@@ -45,6 +45,7 @@ export function CreateTransactionForm({ cities, parties }: { cities: City[]; par
   );
   const [transactionType, setTransactionType] = useState("receipt");
   const [originCityId, setOriginCityId] = useState("");
+  const [partyId, setPartyId] = useState("");
 
   const needsParty = NEEDS_PARTY.has(transactionType);
   const needsDestination = NEEDS_DESTINATION_CITY.has(transactionType);
@@ -54,6 +55,15 @@ export function CreateTransactionForm({ cities, parties }: { cities: City[]; par
     () => (originCityId ? parties.filter((p) => p.primary_city_id === originCityId) : parties),
     [parties, originCityId]
   );
+
+  // Sharing only makes sense for a plain money-in/money-out against someone
+  // who is actually another user of the app.
+  const selectedParty = parties.find((p) => p.id === partyId);
+  const canShare =
+    Boolean(selectedParty?.linked_profile_id) &&
+    !needsDestination &&
+    !needsCounterparty &&
+    transactionType !== "reconciliation_adjustment";
 
   return (
     <form action={formAction} className="space-y-5">
@@ -98,13 +108,19 @@ export function CreateTransactionForm({ cities, parties }: { cities: City[]; par
       {needsParty && (
         <div>
           <Label>Step 3 — Party</Label>
-          <Select name="party_id" required={needsParty}>
-            <option value="" disabled defaultValue="">
+          <Select
+            name="party_id"
+            required={needsParty}
+            value={partyId}
+            onChange={(e) => setPartyId(e.target.value)}
+          >
+            <option value="" disabled>
               Select party
             </option>
             {partiesInOriginCity.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.name}
+                {p.linked_profile_id ? " — linked contact" : ""}
               </option>
             ))}
           </Select>
@@ -115,6 +131,25 @@ export function CreateTransactionForm({ cities, parties }: { cities: City[]; par
         <Label>Step 4 — Amount</Label>
         <Input name="amount" type="number" step="0.01" min="0.01" required placeholder="500000" />
       </div>
+
+      {canShare && (
+        <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-accent/30 bg-accent/[0.06] p-4">
+          <input
+            type="checkbox"
+            name="share_with_linked"
+            defaultChecked
+            className="mt-0.5 h-4 w-4 accent-[var(--accent)]"
+          />
+          <span>
+            <span className="block text-sm font-medium">Share with {selectedParty?.name}</span>
+            <span className="mt-0.5 block text-xs text-muted">
+              Posts a matching entry in their book as <strong>pending</strong> until they confirm
+              it, so both sides always agree on the amount. Uncheck to keep this private to your
+              own book.
+            </span>
+          </span>
+        </label>
+      )}
 
       {(needsDestination || needsCounterparty) && (
         <div className="space-y-4 rounded-lg border border-dashed border-border p-4">

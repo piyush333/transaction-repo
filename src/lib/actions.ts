@@ -11,17 +11,25 @@ export async function createCityAction(_prev: ActionState, formData: FormData): 
   const code = String(formData.get("code") || "").toUpperCase().trim();
   const name = String(formData.get("name") || "").trim();
   const state = String(formData.get("state") || "").trim() || null;
+  const country = String(formData.get("country") || "India").trim() || "India";
   const currency = String(formData.get("currency") || "INR").trim();
   const opening_balance = Number(formData.get("opening_balance") || 0);
 
   if (!code || !name) return { error: "City code and name are required." };
 
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Not signed in." };
+
   const { error } = await supabase.from("cities").insert({
     code,
     name,
     state,
+    country,
     currency,
     opening_balance,
+    owner_id: user.id,
   });
 
   if (error) return { error: error.message };
@@ -37,12 +45,14 @@ export async function createPartyAction(_prev: ActionState, formData: FormData):
   const party_type = String(formData.get("party_type") || "person");
   const opening_balance = Number(formData.get("opening_balance") || 0);
   const notes = String(formData.get("notes") || "").trim() || null;
+  const linked_profile_id = String(formData.get("linked_profile_id") || "") || null;
 
   if (!name || !primary_city_id) return { error: "Name and primary city are required." };
 
   const {
     data: { user },
   } = await supabase.auth.getUser();
+  if (!user) return { error: "Not signed in." };
 
   const { error } = await supabase.from("parties").insert({
     name,
@@ -51,7 +61,9 @@ export async function createPartyAction(_prev: ActionState, formData: FormData):
     party_type,
     opening_balance,
     notes,
-    created_by: user?.id ?? null,
+    linked_profile_id,
+    created_by: user.id,
+    owner_id: user.id,
   });
 
   if (error) return { error: error.message };
@@ -73,16 +85,28 @@ export async function createTransactionAction(
   const counterparty_id = String(formData.get("counterparty_id") || "") || null;
   const description = String(formData.get("description") || "").trim() || null;
   const reference = String(formData.get("reference") || "").trim() || null;
+  const share_with_linked = formData.get("share_with_linked") === "on";
 
   if (!transaction_type || !origin_city_id || !amount) {
     return { error: "Transaction type, city and amount are required." };
   }
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .single();
-  const status = profile?.role === "operator" ? "pending" : "confirmed";
+  // Sharing routes through create_linked_transaction, which also mirrors a
+  // pending counter-entry into the linked contact's own book.
+  if (share_with_linked && party_id) {
+    const { data, error } = await supabase.rpc("create_linked_transaction", {
+      p_transaction_type: transaction_type,
+      p_origin_city_id: origin_city_id,
+      p_amount: amount,
+      p_linked_party_id: party_id,
+      p_description: description,
+      p_reference: reference,
+    });
+    if (error) return { error: error.message };
+    revalidatePath("/transactions");
+    revalidatePath("/dashboard");
+    redirect(`/transactions/${data.token}`);
+  }
 
   const { data, error } = await supabase.rpc("create_transaction", {
     p_transaction_type: transaction_type,
@@ -93,7 +117,7 @@ export async function createTransactionAction(
     p_counterparty_id: counterparty_id,
     p_description: description,
     p_reference: reference,
-    p_status: status,
+    p_status: "confirmed",
   });
 
   if (error) return { error: error.message };
@@ -128,6 +152,7 @@ export async function updateTransactionStatusAction(transactionId: string, statu
       previous_value: before,
       new_value: { ...before, status },
       reason: `Status changed to ${status}`,
+      owner_id: user?.id,
     });
   }
 
@@ -152,4 +177,51 @@ export async function reverseTransactionAction(_prev: ActionState, formData: For
   revalidatePath("/transactions");
   revalidatePath("/dashboard");
   redirect(`/transactions/${data.token}`);
+}
+
+/**
+ * Deletes permanently. Unlinked transactions go immediately; linked ones
+ * need the other person's approval first (their balance changes too).
+ */
+export async function requestDeleteTransactionAction(
+  _prev: ActionState,
+  formData: FormData
+): Promise<ActionState> {
+  const supabase = await createClient();
+  const transaction_id = String(formData.get("transaction_id") || "");
+  const reason = String(formData.get("reason") || "").trim();
+
+  if (!reason) return { error: "A reason is required to delete a transaction." };
+
+  const { data, error } = await supabase.rpc("request_delete_transaction", {
+    p_transaction_id: transaction_id,
+    p_reason: reason,
+  });
+
+  if (error) return { error: error.message };
+
+  revalidatePath("/transactions");
+  revalidatePath("/dashboard");
+  if (data?.status === "deleted") redirect("/transactions");
+  redirect(`/transactions?pending_delete=1`);
+}
+
+export async function confirmDeleteTransactionAction(transactionId: string) {
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("confirm_delete_transaction", {
+    p_transaction_id: transactionId,
+  });
+  revalidatePath("/transactions");
+  revalidatePath("/dashboard");
+  return { error: error?.message ?? null };
+}
+
+export async function cancelDeleteRequestAction(transactionId: string) {
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("cancel_delete_request", {
+    p_transaction_id: transactionId,
+  });
+  revalidatePath("/transactions");
+  revalidatePath("/dashboard");
+  return { error: error?.message ?? null };
 }

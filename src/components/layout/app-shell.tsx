@@ -6,13 +6,9 @@ import { ThemeToggle } from "@/components/layout/theme-toggle";
 import type { Profile } from "@/lib/types";
 import type { ReactNode } from "react";
 
-const ROLE_LABELS: Record<string, string> = {
-  owner: "Owner",
-  city_manager: "City Manager",
-  operator: "Operator",
-  viewer: "Viewer",
-  auditor: "Auditor",
-};
+// Each person owns exactly one private book, so there is only one role now.
+// The `role` column is kept in the schema in case delegation is ever added
+// back to an individual book.
 
 export function AppShell({ profile, children }: { profile: Profile; children: ReactNode }) {
   return (
@@ -35,7 +31,7 @@ export function AppShell({ profile, children }: { profile: Profile; children: Re
             </div>
             <div className="min-w-0">
               <p className="truncate text-sm font-medium">{profile.full_name || profile.email}</p>
-              <p className="text-xs text-muted">{ROLE_LABELS[profile.role] ?? profile.role}</p>
+              <p className="text-xs text-muted">Your book</p>
             </div>
           </div>
           <ThemeToggle />

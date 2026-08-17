@@ -26,13 +26,6 @@ export type MapEdge = {
 
 type Rect = { cx: number; cy: number; w: number; h: number };
 
-// Deterministic hash so repeat renders place the same city at the same spot.
-function hash(seed: string): number {
-  let h = 0;
-  for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0;
-  return h;
-}
-
 const [VB_X, VB_Y, VB_W, VB_H] = INDIA_VIEWBOX.split(" ").map(Number);
 const MIN_SCALE = 1;
 const MAX_SCALE = 6;
@@ -61,20 +54,25 @@ export function IndiaMap({ cities, edges }: { cities: MapCity[]; edges: MapEdge[
 
   const fallbackRect: Rect = { cx: VB_X + VB_W / 2, cy: VB_Y + VB_H / 2, w: VB_W, h: VB_H };
 
+  // A city whose state isn't a recognised Indian state (e.g. Dubai) can't be
+  // honestly placed on an India map — showing it at some hashed point inside
+  // the country would be worse than not showing it, so it's listed instead.
+  const mappable = useMemo(() => cities.filter((c) => stateIdForName(c.state)), [cities]);
+  const offMap = useMemo(() => cities.filter((c) => !stateIdForName(c.state)), [cities]);
+
   const positioned = useMemo(() => {
     // Group cities by matched state so multiple cities in one state spread
     // out on a deterministic golden-angle spiral instead of colliding at
-    // the same centroid (or, for unmatched states, the same map-wide hash).
+    // the same centroid.
     const groups = new Map<string, typeof cities>();
-    for (const c of cities) {
-      const key = stateIdForName(c.state) ?? `__unmatched_${hash(c.id) % 7}`;
+    for (const c of mappable) {
+      const key = stateIdForName(c.state)!;
       groups.set(key, [...(groups.get(key) ?? []), c]);
     }
 
     const result = new Map<string, { x: number; y: number }>();
     for (const [key, group] of groups) {
-      const stateId = key.startsWith("__unmatched_") ? null : key;
-      const rect = (stateId && stateRects[stateId]) || fallbackRect;
+      const rect = stateRects[key] || fallbackRect;
       const maxRadius = Math.min(rect.w, rect.h) * 0.32;
       const sorted = [...group].sort((a, b) => a.id.localeCompare(b.id));
       sorted.forEach((c, i) => {
@@ -88,9 +86,12 @@ export function IndiaMap({ cities, edges }: { cities: MapCity[]; edges: MapEdge[
       });
     }
 
-    return cities.map((c) => ({ ...c, ...(result.get(c.id) ?? { x: fallbackRect.cx, y: fallbackRect.cy }) }));
+    return mappable.map((c) => ({
+      ...c,
+      ...(result.get(c.id) ?? { x: fallbackRect.cx, y: fallbackRect.cy }),
+    }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cities, stateRects]);
+  }, [mappable, stateRects]);
 
   const byId = useMemo(() => new Map(positioned.map((c) => [c.id, c])), [positioned]);
   const maxVolume = Math.max(1, ...positioned.map((c) => c.volume));
@@ -313,6 +314,23 @@ export function IndiaMap({ cities, edges }: { cities: MapCity[]; edges: MapEdge[
         </span>
         <span className="text-muted/70">Scroll or drag to explore</span>
       </div>
+
+      {offMap.length > 0 && (
+        <div className="mt-3 border-t border-border pt-3">
+          <p className="text-xs text-muted">
+            Outside India — not shown on the map:{" "}
+            {offMap.map((c, i) => (
+              <span key={c.id}>
+                {i > 0 && ", "}
+                <Link href={`/cities/${c.id}`} className="font-medium text-foreground hover:underline">
+                  {c.name}
+                </Link>{" "}
+                ({formatCompactMoney(c.balance)})
+              </span>
+            ))}
+          </p>
+        </div>
+      )}
     </div>
   );
 }

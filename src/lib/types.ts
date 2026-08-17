@@ -64,6 +64,9 @@ export interface Party {
   notes: string | null;
   active: boolean;
   created_by: string | null;
+  owner_id: string;
+  /** Set when this party IS the other real user, enabling shared transactions. */
+  linked_profile_id: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -85,6 +88,12 @@ export interface Transaction {
   settles_transaction_id: string | null;
   created_by: string | null;
   approved_by: string | null;
+  owner_id: string;
+  /** The counterpart row in the other person's book, for shared transactions. */
+  linked_transaction_id: string | null;
+  delete_requested_by: string | null;
+  delete_requested_at: string | null;
+  delete_reason: string | null;
   created_at: string;
   updated_at: string;
 }

@@ -215,6 +215,78 @@ export async function getAllProfiles(): Promise<Profile[]> {
   return (data as Profile[]) ?? [];
 }
 
+export interface DashboardSnapshot {
+  kpis: DashboardKpis | null;
+  cities: City[];
+  city_balances: CityBalance[];
+  city_receivable_payable: CityReceivablePayable[];
+  obligations: CityToCityObligation[];
+  recent_transactions: Transaction[];
+  top_parties: PartyExposureRow[];
+}
+
+/** One round-trip for the whole dashboard instead of seven. */
+export async function getDashboardSnapshot(): Promise<DashboardSnapshot> {
+  const supabase = await createClient();
+  const { data } = await supabase.rpc("dashboard_snapshot");
+  return (
+    (data as DashboardSnapshot) ?? {
+      kpis: null,
+      cities: [],
+      city_balances: [],
+      city_receivable_payable: [],
+      obligations: [],
+      recent_transactions: [],
+      top_parties: [],
+    }
+  );
+}
+
+/** Every other person with an account — candidates to add as a linked contact. */
+export async function getOtherProfiles(): Promise<Profile[]> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return [];
+  const { data } = await supabase.from("profiles").select("*").neq("id", user.id).order("email");
+  return (data as Profile[]) ?? [];
+}
+
+/** Parties in my book that represent the other real user. */
+export async function getLinkedContacts(): Promise<Party[]> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("parties")
+    .select("*")
+    .not("linked_profile_id", "is", null)
+    .order("name");
+  return (data as Party[]) ?? [];
+}
+
+/** Shared transactions the other person created that I haven't confirmed yet. */
+export async function getPendingLinkedTransactions(): Promise<Transaction[]> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("transactions")
+    .select("*")
+    .eq("status", "pending")
+    .not("linked_transaction_id", "is", null)
+    .order("created_at", { ascending: false });
+  return (data as Transaction[]) ?? [];
+}
+
+/** Linked transactions where the other person has asked to delete. */
+export async function getPendingDeleteRequests(): Promise<Transaction[]> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("transactions")
+    .select("*")
+    .not("delete_requested_by", "is", null)
+    .order("delete_requested_at", { ascending: false });
+  return (data as Transaction[]) ?? [];
+}
+
 export async function getRecentMessages(limit = 100): Promise<Message[]> {
   const supabase = await createClient();
   const { data } = await supabase

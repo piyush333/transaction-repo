@@ -4,28 +4,25 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatCard } from "@/components/ui/stat-card";
 import { balanceLabel, formatCompactMoney, formatDateTime, STATUS_LABELS, STATUS_TONE, TRANSACTION_TYPE_LABELS } from "@/lib/format";
-import {
-  getCities,
-  getCityBalances,
-  getCityReceivablePayable,
-  getCityToCityObligations,
-  getDashboardKpis,
-  getPartyExposure,
-  getRecentTransactions,
-} from "@/lib/queries";
+import { getDashboardSnapshot, getPendingLinkedTransactions } from "@/lib/queries";
 import { LinkButton } from "@/components/ui/button";
 import Link from "next/link";
 
 export default async function DashboardPage() {
-  const [kpis, cities, cityBalances, cityRP, obligations, recentTxns, topParties] = await Promise.all([
-    getDashboardKpis(),
-    getCities(),
-    getCityBalances(),
-    getCityReceivablePayable(),
-    getCityToCityObligations(),
-    getRecentTransactions(8),
-    getPartyExposure(8),
+  const [snapshot, pendingShared] = await Promise.all([
+    getDashboardSnapshot(),
+    getPendingLinkedTransactions(),
   ]);
+
+  const {
+    kpis,
+    cities,
+    city_balances: cityBalances,
+    city_receivable_payable: cityRP,
+    obligations,
+    recent_transactions: recentTxns,
+    top_parties: topParties,
+  } = snapshot;
 
   const rpByCity = new Map(cityRP.map((r) => [r.city_id, r]));
   const stateByCity = new Map(cities.map((c) => [c.id, c.state]));
@@ -59,6 +56,27 @@ export default async function DashboardPage() {
         </div>
         <LinkButton href="/transactions/new">New Transaction</LinkButton>
       </div>
+
+      {pendingShared.length > 0 && (
+        <Card className="border-amber-500/30 bg-amber-500/[0.06] p-4">
+          <p className="text-sm font-medium text-amber-700 dark:text-amber-400">
+            {pendingShared.length} shared transaction{pendingShared.length > 1 ? "s" : ""} waiting
+            for your confirmation
+          </p>
+          <div className="mt-2 space-y-1">
+            {pendingShared.map((t) => (
+              <Link
+                key={t.id}
+                href={`/transactions/${t.token}`}
+                className="flex items-center justify-between rounded-lg px-2 py-1.5 text-sm hover:bg-foreground/[0.04]"
+              >
+                <span className="font-mono text-xs">{t.token}</span>
+                <span className="tabular-nums">{formatCompactMoney(t.amount)}</span>
+              </Link>
+            ))}
+          </div>
+        </Card>
+      )}
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <StatCard label="Total Position" value={formatCompactMoney(kpis?.total_position ?? 0)} />

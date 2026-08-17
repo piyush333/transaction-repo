@@ -5,7 +5,9 @@ import { redirect } from "next/navigation";
 
 export default async function AuditLogPage() {
   const profile = await getCurrentProfile();
-  if (!profile || !["owner", "auditor"].includes(profile.role)) {
+  // Each person owns exactly one book and the audit log is RLS-scoped to it,
+  // so there's nothing further to gate on beyond being signed in.
+  if (!profile) {
     redirect("/dashboard");
   }
 

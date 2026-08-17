@@ -3,10 +3,16 @@
 import { Button } from "@/components/ui/button";
 import { Input, Label, Select, Textarea } from "@/components/ui/field";
 import { createPartyAction, type ActionState } from "@/lib/actions";
-import type { City } from "@/lib/types";
+import type { City, Profile } from "@/lib/types";
 import { useActionState } from "react";
 
-export function CreatePartyForm({ cities }: { cities: City[] }) {
+export function CreatePartyForm({
+  cities,
+  otherProfiles = [],
+}: {
+  cities: City[];
+  otherProfiles?: Profile[];
+}) {
   const [state, formAction, pending] = useActionState<ActionState, FormData>(createPartyAction, {
     error: null,
   });
@@ -56,6 +62,25 @@ export function CreatePartyForm({ cities }: { cities: City[] }) {
         <Label htmlFor="notes">Notes</Label>
         <Textarea id="notes" name="notes" rows={3} />
       </div>
+
+      {otherProfiles.length > 0 && (
+        <div className="rounded-lg border border-dashed border-border p-4">
+          <Label htmlFor="linked_profile_id">Link to a person on this platform</Label>
+          <Select id="linked_profile_id" name="linked_profile_id" defaultValue="">
+            <option value="">Not linked — an ordinary party</option>
+            {otherProfiles.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.full_name || p.email}
+              </option>
+            ))}
+          </Select>
+          <p className="mt-1.5 text-xs text-muted">
+            Linking lets you share transactions with them. A shared transaction appears in their
+            own book as pending until they confirm it — so both books always agree on the amount.
+            They need to add you as a linked contact too.
+          </p>
+        </div>
+      )}
 
       {state.error && <p className="text-sm text-rose-600">{state.error}</p>}
 

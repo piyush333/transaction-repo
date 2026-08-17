@@ -1,5 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { DeleteTransaction } from "@/components/transactions/delete-transaction";
 import { ReverseTransactionForm } from "@/components/transactions/reverse-transaction-form";
 import { TransactionActions } from "@/components/transactions/transaction-actions";
 import {
@@ -53,10 +54,11 @@ export default async function TransactionDetailPage({
   ]);
 
   const actorById = new Map(actors.map((a) => [a.id, a]));
-  const canManage =
-    !!profile &&
-    (profile.role === "owner" ||
-      (profile.role === "city_manager" && profile.assigned_city_id === transaction.origin_city_id));
+  // Each person owns their own book, so managing simply means it's yours.
+  // A mirrored counter-entry is owned by the recipient, so they can confirm
+  // or dispute it independently.
+  const canManage = !!profile && profile.id === transaction.owner_id;
+  const isLinked = Boolean(transaction.linked_transaction_id);
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
@@ -154,12 +156,20 @@ export default async function TransactionDetailPage({
         </CardContent>
       </Card>
 
-      {(transaction.reversed_transaction_id || transaction.settles_transaction_id) && (
+      {(transaction.reversed_transaction_id ||
+        transaction.settles_transaction_id ||
+        transaction.linked_transaction_id) && (
         <Card>
           <CardHeader>
             <CardTitle>Related Transactions</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 text-sm">
+            {transaction.linked_transaction_id && (
+              <p>
+                Shared transaction — the matching entry in the other person&apos;s book is{" "}
+                <RelatedLink id={transaction.linked_transaction_id} />
+              </p>
+            )}
             {transaction.reversed_transaction_id && (
               <p>
                 Reversed by a correcting entry — see{" "}
@@ -188,9 +198,19 @@ export default async function TransactionDetailPage({
           {canManage && transaction.status !== "reversed" && (
             <ReverseTransactionForm transactionId={transaction.id} />
           )}
+          {canManage && (
+            <DeleteTransaction
+              transactionId={transaction.id}
+              isLinked={isLinked}
+              deleteRequestedByMe={transaction.delete_requested_by === profile?.id}
+              deletePending={Boolean(transaction.delete_requested_by)}
+              deleteReason={transaction.delete_reason}
+            />
+          )}
           {!canManage && (
             <p className="text-sm text-muted">
-              You don&apos;t have permission to manage this transaction.
+              This is the other person&apos;s side of a shared transaction — they manage it from
+              their own book.
             </p>
           )}
         </CardContent>

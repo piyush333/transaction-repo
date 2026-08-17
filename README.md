@@ -15,6 +15,43 @@ computes every number from the ledger — never from a manually-edited
   code. Project: `transaction-repo` (ref `bvkpylpqdsdqnwunpaxy`, region
   `ap-south-1`).
 
+## Two private books, one platform
+
+This is **not** a shared organization ledger. Each person who signs up gets
+their own completely private book: their own cities, parties, and
+transactions, invisible to anyone else. That isolation is enforced by
+Postgres Row-Level Security on `owner_id`, so it holds even against direct
+API calls — not just hidden in the UI.
+
+The two books connect in exactly two places:
+
+1. **Linked contacts.** You can mark a party as *being* the other real user
+   (`parties.linked_profile_id`). Both people must add each other.
+2. **Shared transactions.** A transaction against a linked contact can be
+   shared: it posts as `confirmed` in your book and auto-creates a matching
+   **`pending`** counter-entry in theirs (your `payment` becomes their
+   `receipt`), which they confirm. Only one person types the numbers, so
+   the two books can never disagree on an amount. Both people can see that
+   specific linked pair — and nothing else in each other's book.
+
+Chat (`/chat`) is shared between everyone with an account.
+
+### Deleting
+
+Transactions are **permanently deleted**, at the client's explicit request
+(this deliberately overrides the append-only default a ledger would
+normally have — deleting a posted transaction retroactively changes
+historical balances, and cannot be undone):
+
+- **Your own, unlinked** → deleted immediately.
+- **Shared/linked** → you request, the other person approves, then it is
+  removed from *both* books. The requester cannot approve their own request.
+
+In both cases a snapshot (who, when, why, and the full prior row) is written
+to `audit_logs` first. **`audit_logs` itself remains undeletable** — a
+delete attempt raises at the trigger level — so there is always a permanent
+record that a deletion happened, even though the transaction is gone.
+
 ## Architecture: the four core objects
 
 ```
@@ -42,13 +79,10 @@ blocked at the trigger level on `transactions`, `transaction_entries`, and
 
 ## What's built (Phase 1 MVP)
 
-- Email/password auth (Supabase Auth). The **first person to sign up
-  becomes Owner** automatically; everyone after that is a Viewer until the
-  Owner changes their role from the `profiles` table.
-- Role-based access control enforced at the database layer via Postgres RLS
-  (Owner / City Manager / Operator / Viewer / Auditor — see
-  `supabase/migrations/04_rls_policies.sql`), not just hidden in the UI.
-- Cities, Parties (with opening balances, phone, type, notes).
+- Email/password auth (Supabase Auth). Every signup becomes the Owner of
+  their own private book — see "Two private books" above.
+- Cities, Parties (with opening balances, phone, type, notes), plus linked
+  contacts and shared transactions between the two books.
 - Token-based transactions (`CITY-DATE-SEQUENCE` / `CITY-DEST-DATE-SEQUENCE`,
   e.g. `NMC-260814-000001`), covering receipts, payments, city transfers,
   party-to-party transfers, and reconciliation adjustments.
@@ -117,28 +151,43 @@ npx supabase db push
 
 ## Security notes for whoever takes this over
 
-- Row-Level Security is enabled on every table; policies are reviewed
-  against Supabase's security advisor (no unresolved errors/warnings beyond
-  two intentional, low-risk exceptions documented at the top of
-  `04_rls_policies.sql`).
+- Row-Level Security is enabled on every table and scopes all financial data
+  to `owner_id`, so one person's book is unreachable from the other's
+  account even via direct API calls. This was verified by impersonating both
+  real accounts at the database level, not just by checking the UI.
+- Financial data is never exposed to the `anon` (unauthenticated) role —
+  every table explicitly revokes `anon` access.
+- The functions that deliberately cross the book boundary
+  (`create_linked_transaction`, `confirm_delete_transaction`) are
+  `SECURITY DEFINER` and gated on a **mutual** linked-contact relationship.
+  They are the only sanctioned way one account can write into the other's
+  book.
 - Two things are **dashboard-only settings**, not doable via migration —
   worth turning on before this goes into real use:
   - **Authentication → Policies**: enable "Leaked password protection" and
-    consider requiring MFA for the Owner role.
-  - **Database → Backups**: the free tier has limited backup retention. For
-    real financial data, upgrade to a plan with point-in-time recovery.
-- Financial data is never exposed to the `anon` (unauthenticated) role —
-  every table explicitly revokes `anon` access.
+    consider requiring MFA.
+  - **Database → Backups**: the free tier has limited backup retention.
+    Especially important now that transactions can be permanently deleted —
+    without point-in-time recovery, an approved deletion is unrecoverable.
 
 ## Roles
 
-| Role | Access |
-|---|---|
-| Owner | Full access everywhere |
-| City Manager | Create/confirm transactions and parties in their assigned city |
-| Operator | Create transactions in their assigned city (enter as `pending`, needs Manager/Owner confirmation) |
-| Viewer | Read-only, everywhere |
-| Auditor | Read-only + audit log access |
+There is effectively **one role**: each person is the Owner of their own
+book, with full access to it and no access to anyone else's. The earlier
+City Manager / Operator / Viewer / Auditor model was removed when the app
+moved to separate private books — a delegated-permission hierarchy doesn't
+apply when each book has exactly one person.
 
-Assign a role/city by editing a user's row in the `profiles` table (Owner
-only, or directly in the Supabase dashboard).
+The `profiles.role` column is retained (always `'owner'`) so per-book
+delegation could be reintroduced later without another migration.
+
+## Setting up the two users
+
+1. Each person signs up at `/login` → "First time here? Create an account".
+   That automatically creates their own empty private book.
+2. Each adds the other as a **linked contact**: Parties → Add Party → set
+   "Link to a person on this platform" to the other user. **Both** must do
+   this before shared transactions will work — the database rejects a share
+   if the link isn't mutual.
+3. From then on, creating a transaction against that linked party shows a
+   "Share with …" checkbox.

@@ -1,10 +1,10 @@
 import { CreatePartyForm } from "@/components/forms/create-party-form";
 import { Card } from "@/components/ui/card";
 import { LinkButton } from "@/components/ui/button";
-import { getCities } from "@/lib/queries";
+import { getCities, getOtherProfiles } from "@/lib/queries";
 
 export default async function NewPartyPage() {
-  const cities = await getCities();
+  const [cities, otherProfiles] = await Promise.all([getCities(), getOtherProfiles()]);
 
   return (
     <div className="mx-auto max-w-lg space-y-6">
@@ -21,7 +21,7 @@ export default async function NewPartyPage() {
             <LinkButton href="/cities/new">Add City</LinkButton>
           </div>
         ) : (
-          <CreatePartyForm cities={cities} />
+          <CreatePartyForm cities={cities} otherProfiles={otherProfiles} />
         )}
       </Card>
     </div>
