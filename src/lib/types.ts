@@ -134,6 +134,8 @@ export interface PartyBalance {
   name: string;
   party_type: PartyType;
   primary_city_id: string;
+  /** Balances are never mixed across currencies — one row per currency. */
+  currency: string;
   balance: number;
   total_received: number;
   total_paid: number;
@@ -144,6 +146,8 @@ export interface CityBalance {
   city_id: string;
   name: string;
   code: string;
+  /** A city can hold more than one currency — one row per currency. */
+  currency: string;
   balance: number;
   total_incoming: number;
   total_outgoing: number;
@@ -151,6 +155,7 @@ export interface CityBalance {
 
 export interface CityReceivablePayable {
   city_id: string;
+  currency: string;
   receivable: number;
   payable: number;
 }
@@ -158,16 +163,23 @@ export interface CityReceivablePayable {
 export interface CityToCityObligation {
   origin_city_id: string;
   destination_city_id: string;
+  currency: string;
   amount: number;
   transaction_count: number;
 }
 
+/** One row per currency. Figures are never summed across currencies. */
 export interface DashboardKpis {
+  currency: string;
   total_position: number;
   total_receivable: number;
   total_payable: number;
   net_position: number;
   todays_volume: number;
+}
+
+/** Counts have no currency, so they live apart from the money figures. */
+export interface DashboardCounts {
   pending_count: number;
   active_cities: number;
   active_parties: number;
@@ -178,6 +190,7 @@ export interface PartyExposureRow {
   name: string;
   party_type: PartyType;
   primary_city_id: string;
+  currency: string;
   balance: number;
   status: "receivable" | "payable" | "settled";
   exposure: number;
@@ -189,6 +202,9 @@ export interface ReconciliationFlag {
   reconciliation_status: "matched" | "pending" | "discrepancy";
   transaction_status: TransactionStatus;
   amount: number;
+  currency: string;
+  linked_transaction_id: string | null;
+  delete_requested_by: string | null;
   origin_city_id: string;
   destination_city_id: string | null;
   created_at: string;

@@ -16,6 +16,7 @@ export default async function DashboardPage() {
 
   const {
     kpis,
+    counts,
     cities,
     city_balances: cityBalances,
     city_receivable_payable: cityRP,
@@ -24,24 +25,41 @@ export default async function DashboardPage() {
     top_parties: topParties,
   } = snapshot;
 
-  const rpByCity = new Map(cityRP.map((r) => [r.city_id, r]));
+  // Charts and the map can only show one currency at a time. Default to the
+  // one with the most cities — in practice the home currency.
+  const currencyCounts = new Map<string, number>();
+  for (const c of cities) currencyCounts.set(c.currency, (currencyCounts.get(c.currency) ?? 0) + 1);
+  const primaryCurrency =
+    [...currencyCounts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? "INR";
+  const chartCityBalances = cityBalances.filter((c) => c.currency === primaryCurrency);
+  const multiCurrency = currencyCounts.size > 1;
+
+  // keyed by city+currency, since a city can hold several currencies
+  const rpByCity = new Map(cityRP.map((r) => [`${r.city_id}|${r.currency}`, r]));
   const stateByCity = new Map(cities.map((c) => [c.id, c.state]));
-  const mapCities: MapCity[] = cityBalances.map((c) => {
-    const rp = rpByCity.get(c.city_id);
-    return {
-      id: c.city_id,
-      name: c.name,
-      code: c.code,
-      state: stateByCity.get(c.city_id) ?? null,
-      balance: c.balance,
-      receivable: rp?.receivable ?? 0,
-      payable: rp?.payable ?? 0,
-      volume: c.total_incoming + c.total_outgoing,
-    };
-  });
+  const currencyByCity = new Map(cities.map((c) => [c.id, c.currency]));
+  // The map shows each city once, in its OWN currency — a city holding a
+  // foreign balance too would otherwise appear twice with mismatched figures.
+  const mapCities: MapCity[] = cityBalances
+    .filter((c) => c.currency === (currencyByCity.get(c.city_id) ?? c.currency))
+    .map((c) => {
+      const rp = rpByCity.get(`${c.city_id}|${c.currency}`);
+      return {
+        id: c.city_id,
+        name: c.name,
+        code: c.code,
+        state: stateByCity.get(c.city_id) ?? null,
+        currency: c.currency,
+        balance: c.balance,
+        receivable: rp?.receivable ?? 0,
+        payable: rp?.payable ?? 0,
+        volume: c.total_incoming + c.total_outgoing,
+      };
+    });
   const mapEdges: MapEdge[] = obligations.map((o) => ({
     fromId: o.origin_city_id,
     toId: o.destination_city_id,
+    currency: o.currency,
     amount: o.amount,
   }));
 
@@ -71,34 +89,64 @@ export default async function DashboardPage() {
                 className="flex items-center justify-between rounded-lg px-2 py-1.5 text-sm hover:bg-foreground/[0.04]"
               >
                 <span className="font-mono text-xs">{t.token}</span>
-                <span className="tabular-nums">{formatCompactMoney(t.amount)}</span>
+                <span className="tabular-nums">{formatCompactMoney(t.amount, t.currency)}</span>
               </Link>
             ))}
           </div>
         </Card>
       )}
 
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <StatCard label="Total Position" value={formatCompactMoney(kpis?.total_position ?? 0)} />
-        <StatCard
-          label="Receivable"
-          value={formatCompactMoney(kpis?.total_receivable ?? 0)}
-          tone="positive"
-        />
-        <StatCard
-          label="Payable"
-          value={formatCompactMoney(kpis?.total_payable ?? 0)}
-          tone="negative"
-        />
-        <StatCard
-          label="Net Position"
-          value={formatCompactMoney(kpis?.net_position ?? 0)}
-          tone={(kpis?.net_position ?? 0) >= 0 ? "positive" : "negative"}
-        />
-        <StatCard label="Today's Volume" value={formatCompactMoney(kpis?.todays_volume ?? 0)} />
-        <StatCard label="Pending" value={String(kpis?.pending_count ?? 0)} />
-        <StatCard label="Cities" value={String(kpis?.active_cities ?? 0)} />
-        <StatCard label="Active Parties" value={String(kpis?.active_parties ?? 0)} />
+      {/* One block per currency. Figures are never summed across currencies —
+          the app holds no exchange rates, so a combined total would be a
+          number we invented. */}
+      {kpis.length === 0 ? (
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+          <StatCard label="Total Position" value="—" />
+          <StatCard label="Receivable" value="—" tone="positive" />
+          <StatCard label="Payable" value="—" tone="negative" />
+          <StatCard label="Net Position" value="—" />
+        </div>
+      ) : (
+        kpis.map((k) => (
+          <div key={k.currency} className="space-y-2">
+            {kpis.length > 1 && (
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted">
+                {k.currency}
+              </p>
+            )}
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
+              <StatCard
+                label="Total Position"
+                value={formatCompactMoney(k.total_position, k.currency)}
+              />
+              <StatCard
+                label="Receivable"
+                value={formatCompactMoney(k.total_receivable, k.currency)}
+                tone="positive"
+              />
+              <StatCard
+                label="Payable"
+                value={formatCompactMoney(k.total_payable, k.currency)}
+                tone="negative"
+              />
+              <StatCard
+                label="Net Position"
+                value={formatCompactMoney(k.net_position, k.currency)}
+                tone={k.net_position >= 0 ? "positive" : "negative"}
+              />
+              <StatCard
+                label="Today's Volume"
+                value={formatCompactMoney(k.todays_volume, k.currency)}
+              />
+            </div>
+          </div>
+        ))
+      )}
+
+      <div className="grid grid-cols-3 gap-3">
+        <StatCard label="Pending" value={String(counts?.pending_count ?? 0)} />
+        <StatCard label="Cities" value={String(counts?.active_cities ?? 0)} />
+        <StatCard label="Active Parties" value={String(counts?.active_parties ?? 0)} />
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
@@ -118,31 +166,35 @@ export default async function DashboardPage() {
         </Card>
 
         <Card className="lg:col-span-1">
-          <CardHeader>
+          <CardHeader className="justify-between">
             <CardTitle>Balance by City</CardTitle>
+            {multiCurrency && <span className="text-xs text-muted">{primaryCurrency} only</span>}
           </CardHeader>
           <CardContent>
-            {cityBalances.length === 0 ? (
+            {chartCityBalances.length === 0 ? (
               <p className="py-10 text-center text-sm text-muted">No cities yet.</p>
             ) : (
               <BalanceByCityChart
-                data={cityBalances.map((c) => ({ name: c.code, balance: c.balance }))}
+                currency={primaryCurrency}
+                data={chartCityBalances.map((c) => ({ name: c.code, balance: c.balance }))}
               />
             )}
           </CardContent>
         </Card>
 
         <Card className="lg:col-span-1">
-          <CardHeader>
+          <CardHeader className="justify-between">
             <CardTitle>Receivable vs Payable</CardTitle>
+            {multiCurrency && <span className="text-xs text-muted">{primaryCurrency} only</span>}
           </CardHeader>
           <CardContent>
-            {cityBalances.length === 0 ? (
+            {chartCityBalances.length === 0 ? (
               <p className="py-10 text-center text-sm text-muted">No cities yet.</p>
             ) : (
               <ReceivablePayableChart
-                data={cityBalances.map((c) => {
-                  const rp = rpByCity.get(c.city_id);
+                currency={primaryCurrency}
+                data={chartCityBalances.map((c) => {
+                  const rp = rpByCity.get(`${c.city_id}|${c.currency}`);
                   return { name: c.code, receivable: rp?.receivable ?? 0, payable: rp?.payable ?? 0 };
                 })}
               />
@@ -173,7 +225,7 @@ export default async function DashboardPage() {
                 >
                   <span className="text-sm font-medium">{p.name}</span>
                   <span className="flex items-center gap-2">
-                    <span className="text-sm tabular-nums">{formatCompactMoney(bl.amount)}</span>
+                    <span className="text-sm tabular-nums">{formatCompactMoney(bl.amount, p.currency)}</span>
                     <Badge tone={bl.tone}>{bl.label}</Badge>
                   </span>
                 </Link>
@@ -206,7 +258,7 @@ export default async function DashboardPage() {
                   </span>
                 </span>
                 <span className="flex items-center gap-2">
-                  <span className="text-sm tabular-nums">{formatCompactMoney(t.amount)}</span>
+                  <span className="text-sm tabular-nums">{formatCompactMoney(t.amount, t.currency)}</span>
                   <Badge tone={STATUS_TONE[t.status]}>{STATUS_LABELS[t.status]}</Badge>
                 </span>
               </Link>

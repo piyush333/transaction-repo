@@ -33,8 +33,11 @@ export default async function CityDetailPage({ params }: { params: Promise<{ id:
 
   if (!city) notFound();
 
-  const balance = balances.find((b) => b.city_id === id);
-  const cityRp = rp.find((r) => r.city_id === id);
+  // The city's own currency leads; foreign holdings get their own block.
+  const cityRows = balances
+    .filter((b) => b.city_id === id)
+    .sort((x, y) => (x.currency === city.currency ? -1 : y.currency === city.currency ? 1 : 0));
+  const rows = cityRows.length > 0 ? cityRows : [];
 
   const today = new Date().toDateString();
   const todaysTxns = transactions.filter((t) => new Date(t.created_at).toDateString() === today);
@@ -60,24 +63,40 @@ export default async function CityDetailPage({ params }: { params: Promise<{ id:
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <StatCard label="Current Balance" value={formatCompactMoney(balance?.balance ?? 0)} />
-        <StatCard
-          label="Receivable"
-          value={formatCompactMoney(cityRp?.receivable ?? 0)}
-          tone="positive"
-        />
-        <StatCard
-          label="Payable"
-          value={formatCompactMoney(cityRp?.payable ?? 0)}
-          tone="negative"
-        />
-        <StatCard
-          label="Net Position"
-          value={formatCompactMoney(balance?.balance ?? 0)}
-          tone={(balance?.balance ?? 0) >= 0 ? "positive" : "negative"}
-        />
-      </div>
+      {rows.map((b) => {
+        const cityRp = rp.find((r) => r.city_id === id && r.currency === b.currency);
+        return (
+          <div key={b.currency} className="space-y-2">
+            {rows.length > 1 && (
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted">
+                {b.currency}
+                {b.currency !== city.currency && " (held, not the city's own currency)"}
+              </p>
+            )}
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+              <StatCard
+                label="Current Balance"
+                value={formatCompactMoney(b.balance, b.currency)}
+              />
+              <StatCard
+                label="Receivable"
+                value={formatCompactMoney(cityRp?.receivable ?? 0, b.currency)}
+                tone="positive"
+              />
+              <StatCard
+                label="Payable"
+                value={formatCompactMoney(cityRp?.payable ?? 0, b.currency)}
+                tone="negative"
+              />
+              <StatCard
+                label="Net Position"
+                value={formatCompactMoney(b.balance, b.currency)}
+                tone={b.balance >= 0 ? "positive" : "negative"}
+              />
+            </div>
+          </div>
+        );
+      })}
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <Card>
@@ -128,7 +147,9 @@ export default async function CityDetailPage({ params }: { params: Promise<{ id:
                 >
                   <span className="text-sm font-medium">{pb.party!.name}</span>
                   <span className="flex items-center gap-2">
-                    <span className="text-sm tabular-nums">{formatCompactMoney(bl.amount)}</span>
+                    <span className="text-sm tabular-nums">
+                      {formatCompactMoney(bl.amount, pb.currency)}
+                    </span>
                     <Badge tone={bl.tone}>{bl.label}</Badge>
                   </span>
                 </Link>
@@ -158,7 +179,15 @@ export default async function CityDetailPage({ params }: { params: Promise<{ id:
 function TxnRow({
   t,
 }: {
-  t: { id: string; token: string; transaction_type: string; amount: number; status: string; created_at: string };
+  t: {
+    id: string;
+    token: string;
+    transaction_type: string;
+    amount: number;
+    currency: string;
+    status: string;
+    created_at: string;
+  };
 }) {
   return (
     <Link
@@ -172,7 +201,7 @@ function TxnRow({
         </span>
       </span>
       <span className="flex items-center gap-2">
-        <span className="text-sm tabular-nums">{formatCompactMoney(t.amount)}</span>
+        <span className="text-sm tabular-nums">{formatCompactMoney(t.amount, t.currency)}</span>
         <Badge tone={STATUS_TONE[t.status]}>{STATUS_LABELS[t.status]}</Badge>
       </span>
     </Link>

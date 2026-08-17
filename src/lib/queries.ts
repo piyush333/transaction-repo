@@ -5,6 +5,7 @@ import type {
   CityBalance,
   CityReceivablePayable,
   CityToCityObligation,
+  DashboardCounts,
   DashboardKpis,
   Message,
   Party,
@@ -25,10 +26,11 @@ export async function getCurrentProfile(): Promise<Profile | null> {
   return data as Profile | null;
 }
 
-export async function getDashboardKpis(): Promise<DashboardKpis | null> {
+/** One row per currency. */
+export async function getDashboardKpis(): Promise<DashboardKpis[]> {
   const supabase = await createClient();
-  const { data } = await supabase.from("dashboard_kpis").select("*").single();
-  return data as DashboardKpis | null;
+  const { data } = await supabase.from("dashboard_kpis").select("*").order("currency");
+  return (data as DashboardKpis[]) ?? [];
 }
 
 export async function getCities(): Promise<City[]> {
@@ -39,7 +41,7 @@ export async function getCities(): Promise<City[]> {
 
 export async function getCityBalances(): Promise<CityBalance[]> {
   const supabase = await createClient();
-  const { data } = await supabase.from("city_balances").select("*").order("name");
+  const { data } = await supabase.from("city_balances").select("*").order("name").order("currency");
   return (data as CityBalance[]) ?? [];
 }
 
@@ -97,10 +99,15 @@ export async function getPartyById(id: string): Promise<Party | null> {
   return data as Party | null;
 }
 
-export async function getPartyBalance(id: string): Promise<PartyBalance | null> {
+/** A party can hold several currencies, so this returns one row per currency. */
+export async function getPartyBalance(id: string): Promise<PartyBalance[]> {
   const supabase = await createClient();
-  const { data } = await supabase.from("party_balances").select("*").eq("party_id", id).single();
-  return data as PartyBalance | null;
+  const { data } = await supabase
+    .from("party_balances")
+    .select("*")
+    .eq("party_id", id)
+    .order("currency");
+  return (data as PartyBalance[]) ?? [];
 }
 
 export async function getRecentTransactions(limit = 10): Promise<Transaction[]> {
@@ -193,7 +200,7 @@ export async function getTransactionVolumeDaily(days = 30) {
     .select("*")
     .gte("day", since.toISOString().slice(0, 10))
     .order("day");
-  return (data as { day: string; volume: number; txn_count: number }[]) ?? [];
+  return (data as { day: string; currency: string; volume: number; txn_count: number }[]) ?? [];
 }
 
 export async function getPartyExposure(limit = 10): Promise<PartyExposureRow[]> {
@@ -216,7 +223,9 @@ export async function getAllProfiles(): Promise<Profile[]> {
 }
 
 export interface DashboardSnapshot {
-  kpis: DashboardKpis | null;
+  /** One entry per currency — never summed together. */
+  kpis: DashboardKpis[];
+  counts: DashboardCounts | null;
   cities: City[];
   city_balances: CityBalance[];
   city_receivable_payable: CityReceivablePayable[];
@@ -231,7 +240,8 @@ export async function getDashboardSnapshot(): Promise<DashboardSnapshot> {
   const { data } = await supabase.rpc("dashboard_snapshot");
   return (
     (data as DashboardSnapshot) ?? {
-      kpis: null,
+      kpis: [],
+      counts: null,
       cities: [],
       city_balances: [],
       city_receivable_payable: [],

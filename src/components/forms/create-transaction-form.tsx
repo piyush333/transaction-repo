@@ -46,6 +46,14 @@ export function CreateTransactionForm({ cities, parties }: { cities: City[]; par
   const [transactionType, setTransactionType] = useState("receipt");
   const [originCityId, setOriginCityId] = useState("");
   const [partyId, setPartyId] = useState("");
+  const [currency, setCurrency] = useState("");
+
+  // The transaction takes the city's currency unless deliberately overridden
+  // — needed when money physically moves across a border (e.g. carrying INR
+  // into Dubai). The app never converts; it records what actually happened.
+  const originCity = cities.find((c) => c.id === originCityId);
+  const effectiveCurrency = currency || originCity?.currency || "INR";
+  const currencyOptions = [...new Set([...cities.map((c) => c.currency), "INR"])].sort();
 
   const needsParty = NEEDS_PARTY.has(transactionType);
   const needsDestination = NEEDS_DESTINATION_CITY.has(transactionType);
@@ -73,7 +81,10 @@ export function CreateTransactionForm({ cities, parties }: { cities: City[]; par
           name="origin_city_id"
           required
           value={originCityId}
-          onChange={(e) => setOriginCityId(e.target.value)}
+          onChange={(e) => {
+            setOriginCityId(e.target.value);
+            setCurrency("");
+          }}
         >
           <option value="" disabled>
             Select origin city
@@ -129,7 +140,36 @@ export function CreateTransactionForm({ cities, parties }: { cities: City[]; par
 
       <div>
         <Label>Step 4 — Amount</Label>
-        <Input name="amount" type="number" step="0.01" min="0.01" required placeholder="500000" />
+        <div className="flex gap-2">
+          <Input
+            name="amount"
+            type="number"
+            step="0.01"
+            min="0.01"
+            required
+            placeholder="500000"
+            className="flex-1"
+          />
+          <Select
+            name="currency"
+            value={effectiveCurrency}
+            onChange={(e) => setCurrency(e.target.value)}
+            className="w-28"
+            aria-label="Currency"
+          >
+            {currencyOptions.map((c) => (
+              <option key={c} value={c}>
+                {c}
+              </option>
+            ))}
+          </Select>
+        </div>
+        {originCity && effectiveCurrency !== originCity.currency && (
+          <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">
+            {originCity.name} is a {originCity.currency} city — this will be recorded as a
+            separate {effectiveCurrency} balance there. No conversion is applied.
+          </p>
+        )}
       </div>
 
       {canShare && (

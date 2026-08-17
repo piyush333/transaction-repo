@@ -6,12 +6,24 @@ export function formatMoney(amount: number, currency = "INR") {
   }).format(amount);
 }
 
+/**
+ * Lakh/crore is an Indian convention — applying it to other currencies
+ * ("AED 5.00L") is simply wrong, so non-INR amounts use K/M/B instead.
+ */
 export function formatCompactMoney(amount: number, currency = "INR") {
   const abs = Math.abs(amount);
   const sign = amount < 0 ? "-" : "";
-  const symbol = currency === "INR" ? "₹" : currency + " ";
-  if (abs >= 1_00_00_000) return `${sign}${symbol}${(abs / 1_00_00_000).toFixed(2)}Cr`;
-  if (abs >= 1_00_000) return `${sign}${symbol}${(abs / 1_00_000).toFixed(2)}L`;
+
+  if (currency === "INR") {
+    if (abs >= 1_00_00_000) return `${sign}₹${(abs / 1_00_00_000).toFixed(2)}Cr`;
+    if (abs >= 1_00_000) return `${sign}₹${(abs / 1_00_000).toFixed(2)}L`;
+    if (abs >= 1_000) return `${sign}₹${(abs / 1_000).toFixed(1)}K`;
+    return formatMoney(amount, currency);
+  }
+
+  const symbol = `${currency} `;
+  if (abs >= 1_000_000_000) return `${sign}${symbol}${(abs / 1_000_000_000).toFixed(2)}B`;
+  if (abs >= 1_000_000) return `${sign}${symbol}${(abs / 1_000_000).toFixed(2)}M`;
   if (abs >= 1_000) return `${sign}${symbol}${(abs / 1_000).toFixed(1)}K`;
   return formatMoney(amount, currency);
 }

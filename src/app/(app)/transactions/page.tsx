@@ -83,7 +83,7 @@ export default async function TransactionsPage({
                     {cityById.get(t.origin_city_id)?.code ?? "—"}
                     {t.destination_city_id ? ` → ${cityById.get(t.destination_city_id)?.code ?? ""}` : ""}
                   </td>
-                  <td className="px-4 py-3 tabular-nums">{formatCompactMoney(t.amount)}</td>
+                  <td className="px-4 py-3 tabular-nums">{formatCompactMoney(t.amount, t.currency)}</td>
                   <td className="px-4 py-3">
                     <Badge tone={STATUS_TONE[t.status]}>{STATUS_LABELS[t.status]}</Badge>
                   </td>

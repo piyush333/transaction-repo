@@ -12,8 +12,10 @@ export default async function CitiesPage() {
     getCityReceivablePayable(),
   ]);
 
-  const balanceById = new Map(balances.map((b) => [b.city_id, b]));
-  const rpById = new Map(rp.map((r) => [r.city_id, r]));
+  // A city can hold several currencies, so group rather than index by id.
+  const balancesByCity = new Map<string, typeof balances>();
+  for (const b of balances) balancesByCity.set(b.city_id, [...(balancesByCity.get(b.city_id) ?? []), b]);
+  const rpById = new Map(rp.map((r) => [`${r.city_id}|${r.currency}`, r]));
 
   return (
     <div className="space-y-6">
@@ -34,8 +36,13 @@ export default async function CitiesPage() {
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {cities.map((c) => {
-            const b = balanceById.get(c.id);
-            const r = rpById.get(c.id);
+            // Show the city's own currency first; any foreign holdings follow.
+            const rows = (balancesByCity.get(c.id) ?? []).sort((x, y) =>
+              x.currency === c.currency ? -1 : y.currency === c.currency ? 1 : 0
+            );
+            const primary = rows[0];
+            const extra = rows.slice(1).filter((r2) => r2.balance !== 0);
+            const r = rpById.get(`${c.id}|${primary?.currency ?? c.currency}`);
             return (
               <Link key={c.id} href={`/cities/${c.id}`}>
                 <InteractiveCard className="h-full p-4">
@@ -49,15 +56,25 @@ export default async function CitiesPage() {
                     {!c.active && <Badge tone="neutral">Inactive</Badge>}
                   </div>
                   <p className="mt-3 text-lg font-semibold tabular-nums">
-                    {formatCompactMoney(b?.balance ?? 0)}
+                    {formatCompactMoney(primary?.balance ?? 0, primary?.currency ?? c.currency)}
                   </p>
                   <p className="text-xs text-muted">Current balance</p>
+                  {extra.length > 0 && (
+                    <p className="mt-1 text-xs text-muted">
+                      also holds{" "}
+                      {extra
+                        .map((e) => formatCompactMoney(e.balance, e.currency))
+                        .join(", ")}
+                    </p>
+                  )}
                   <div className="mt-3 flex gap-4 text-xs">
                     <span className="text-emerald-600 dark:text-emerald-400">
-                      Receivable {formatCompactMoney(r?.receivable ?? 0)}
+                      Receivable{" "}
+                      {formatCompactMoney(r?.receivable ?? 0, primary?.currency ?? c.currency)}
                     </span>
                     <span className="text-rose-600 dark:text-rose-400">
-                      Payable {formatCompactMoney(r?.payable ?? 0)}
+                      Payable{" "}
+                      {formatCompactMoney(r?.payable ?? 0, primary?.currency ?? c.currency)}
                     </span>
                   </div>
                 </InteractiveCard>

@@ -12,7 +12,10 @@ export default async function PartiesPage() {
     getCities(),
   ]);
 
-  const balanceById = new Map(balances.map((b) => [b.party_id, b]));
+  // one row per (party, currency)
+  const balancesByParty = new Map<string, typeof balances>();
+  for (const b of balances)
+    balancesByParty.set(b.party_id, [...(balancesByParty.get(b.party_id) ?? []), b]);
   const cityById = new Map(cities.map((c) => [c.id, c]));
 
   return (
@@ -45,9 +48,16 @@ export default async function PartiesPage() {
             </thead>
             <tbody>
               {parties.map((p) => {
-                const bal = balanceById.get(p.id);
-                const bl = balanceLabel(bal?.balance ?? 0);
+                const rows = (balancesByParty.get(p.id) ?? []).filter(
+                  (b) => b.balance !== 0
+                );
+                const shown = rows.length > 0 ? rows : (balancesByParty.get(p.id) ?? []).slice(0, 1);
                 const city = cityById.get(p.primary_city_id);
+                const lastAt = (balancesByParty.get(p.id) ?? [])
+                  .map((b) => b.last_transaction_at)
+                  .filter(Boolean)
+                  .sort()
+                  .pop();
                 return (
                   <tr
                     key={p.id}
@@ -62,12 +72,25 @@ export default async function PartiesPage() {
                     <td className="px-4 py-3 text-foreground/80">
                       {city?.name ?? "—"}
                     </td>
-                    <td className="px-4 py-3 tabular-nums">{formatCompactMoney(bl.amount)}</td>
+                    <td className="px-4 py-3 tabular-nums">
+                      {shown.map((b) => (
+                        <div key={b.currency}>
+                          {formatCompactMoney(balanceLabel(b.balance).amount, b.currency)}
+                        </div>
+                      ))}
+                    </td>
                     <td className="px-4 py-3">
-                      <Badge tone={bl.tone}>{bl.label}</Badge>
+                      {shown.map((b) => {
+                        const l = balanceLabel(b.balance);
+                        return (
+                          <div key={b.currency} className="mb-0.5 last:mb-0">
+                            <Badge tone={l.tone}>{l.label}</Badge>
+                          </div>
+                        );
+                      })}
                     </td>
                     <td className="px-4 py-3 text-xs text-muted">
-                      {bal?.last_transaction_at ? formatDateTime(bal.last_transaction_at) : "—"}
+                      {lastAt ? formatDateTime(lastAt) : "—"}
                     </td>
                   </tr>
                 );

@@ -176,6 +176,7 @@ export async function createTransactionAction(
   const description = String(formData.get("description") || "").trim() || null;
   const reference = String(formData.get("reference") || "").trim() || null;
   const share_with_linked = formData.get("share_with_linked") === "on";
+  const currency = String(formData.get("currency") || "").trim() || null;
 
   if (!transaction_type || !origin_city_id || !amount) {
     return { error: "Transaction type, city and amount are required." };
@@ -191,6 +192,7 @@ export async function createTransactionAction(
       p_linked_party_id: party_id,
       p_description: description,
       p_reference: reference,
+      p_currency: currency,
     });
     if (error) return { error: error.message };
     revalidatePath("/transactions");
@@ -207,6 +209,7 @@ export async function createTransactionAction(
     p_counterparty_id: counterparty_id,
     p_description: description,
     p_reference: reference,
+    p_currency: currency,
     p_status: "confirmed",
   });
 

@@ -23,7 +23,9 @@ export default async function SearchPage({
   }
 
   const [results, partyBalances] = await Promise.all([searchAll(q), getPartyBalances()]);
-  const balanceById = new Map(partyBalances.map((b) => [b.party_id, b]));
+  const balancesByParty = new Map<string, typeof partyBalances>();
+  for (const b of partyBalances)
+    balancesByParty.set(b.party_id, [...(balancesByParty.get(b.party_id) ?? []), b]);
   const totalResults = results.transactions.length + results.parties.length + results.cities.length;
 
   return (
@@ -52,7 +54,7 @@ export default async function SearchPage({
                   </span>
                 </span>
                 <span className="flex items-center gap-2">
-                  <span className="text-sm tabular-nums">{formatCompactMoney(t.amount)}</span>
+                  <span className="text-sm tabular-nums">{formatCompactMoney(t.amount, t.currency)}</span>
                   <Badge tone={STATUS_TONE[t.status]}>{STATUS_LABELS[t.status]}</Badge>
                 </span>
               </Link>
@@ -68,7 +70,8 @@ export default async function SearchPage({
           </CardHeader>
           <CardContent className="space-y-2">
             {results.parties.map((p) => {
-              const bl = balanceLabel(balanceById.get(p.id)?.balance ?? 0);
+              const rows = (balancesByParty.get(p.id) ?? []).filter((b) => b.balance !== 0);
+              const shown = rows.length > 0 ? rows : (balancesByParty.get(p.id) ?? []).slice(0, 1);
               return (
                 <Link
                   key={p.id}
@@ -79,9 +82,18 @@ export default async function SearchPage({
                     <span className="block text-sm font-medium">{p.name}</span>
                     <span className="text-xs text-muted">{p.phone}</span>
                   </span>
-                  <span className="flex items-center gap-2">
-                    <span className="text-sm tabular-nums">{formatCompactMoney(bl.amount)}</span>
-                    <Badge tone={bl.tone}>{bl.label}</Badge>
+                  <span className="flex flex-col items-end gap-1">
+                    {shown.map((b) => {
+                      const l = balanceLabel(b.balance);
+                      return (
+                        <span key={b.currency} className="flex items-center gap-2">
+                          <span className="text-sm tabular-nums">
+                            {formatCompactMoney(l.amount, b.currency)}
+                          </span>
+                          <Badge tone={l.tone}>{l.label}</Badge>
+                        </span>
+                      );
+                    })}
                   </span>
                 </Link>
               );

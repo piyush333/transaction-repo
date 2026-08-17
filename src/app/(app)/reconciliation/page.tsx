@@ -90,7 +90,7 @@ export default async function ReconciliationPage() {
                     {cityById.get(f.origin_city_id)?.code ?? "—"}
                     {f.destination_city_id ? ` → ${cityById.get(f.destination_city_id)?.code ?? ""}` : ""}
                   </td>
-                  <td className="px-4 py-3 tabular-nums">{formatCompactMoney(f.amount)}</td>
+                  <td className="px-4 py-3 tabular-nums">{formatCompactMoney(f.amount, f.currency)}</td>
                   <td className="px-4 py-3 text-xs text-muted">{formatDateTime(f.created_at)}</td>
                 </tr>
               ))}

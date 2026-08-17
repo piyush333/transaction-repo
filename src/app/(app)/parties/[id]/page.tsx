@@ -39,7 +39,10 @@ export default async function PartyDetailPage({ params }: { params: Promise<{ id
   if (!party) notFound();
 
   const city = await getCityById(party.primary_city_id);
-  const bl = balanceLabel(balance?.balance ?? 0);
+  // A party can owe in one currency while being owed in another, so each
+  // currency gets its own block. Nothing is ever summed across them.
+  const balances = balance.filter((b) => b.balance !== 0 || b.total_received || b.total_paid);
+  const shown = balances.length > 0 ? balances : balance.slice(0, 1);
 
   return (
     <div className="space-y-6">
@@ -62,34 +65,50 @@ export default async function PartyDetailPage({ params }: { params: Promise<{ id
         </div>
       </div>
 
-      <Card className="p-5">
-        <p className="text-xs font-medium uppercase tracking-wide text-muted">
-          Net {bl.label}
-        </p>
-        <p
-          className={
-            "mt-1 text-3xl font-bold tabular-nums " +
-            (bl.tone === "positive"
-              ? "text-emerald-600 dark:text-emerald-400"
-              : bl.tone === "negative"
-                ? "text-rose-600 dark:text-rose-400"
-                : "")
-          }
-        >
-          {formatCompactMoney(bl.amount)}
-        </p>
-        <p className="mt-1 text-sm text-muted">
-          {bl.label === "Receivable" && `${party.name} owes you ${formatCompactMoney(bl.amount)}.`}
-          {bl.label === "Payable" && `You owe ${party.name} ${formatCompactMoney(bl.amount)}.`}
-          {bl.label === "Settled" && "Fully settled — no outstanding balance."}
-        </p>
-      </Card>
+      {shown.map((b) => {
+        const bl = balanceLabel(b.balance);
+        return (
+          <div key={b.currency} className="space-y-3">
+            <Card className="p-5">
+              <p className="text-xs font-medium uppercase tracking-wide text-muted">
+                Net {bl.label}
+                {shown.length > 1 && ` · ${b.currency}`}
+              </p>
+              <p
+                className={
+                  "mt-1 text-3xl font-bold tabular-nums " +
+                  (bl.tone === "positive"
+                    ? "text-emerald-600 dark:text-emerald-400"
+                    : bl.tone === "negative"
+                      ? "text-rose-600 dark:text-rose-400"
+                      : "")
+                }
+              >
+                {formatCompactMoney(bl.amount, b.currency)}
+              </p>
+              <p className="mt-1 text-sm text-muted">
+                {bl.label === "Receivable" &&
+                  `${party.name} owes you ${formatCompactMoney(bl.amount, b.currency)}.`}
+                {bl.label === "Payable" &&
+                  `You owe ${party.name} ${formatCompactMoney(bl.amount, b.currency)}.`}
+                {bl.label === "Settled" && "Fully settled — no outstanding balance."}
+              </p>
+            </Card>
 
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
-        <StatCard label="Total Received" value={formatCompactMoney(balance?.total_received ?? 0)} />
-        <StatCard label="Total Paid" value={formatCompactMoney(balance?.total_paid ?? 0)} />
-        <StatCard label="Opening Balance" value={formatCompactMoney(party.opening_balance)} />
-      </div>
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
+              <StatCard
+                label="Total Received"
+                value={formatCompactMoney(b.total_received, b.currency)}
+              />
+              <StatCard label="Total Paid" value={formatCompactMoney(b.total_paid, b.currency)} />
+              <StatCard
+                label="Opening Balance"
+                value={formatCompactMoney(party.opening_balance, b.currency)}
+              />
+            </div>
+          </div>
+        );
+      })}
 
       {party.notes && (
         <Card className="p-4">
@@ -121,7 +140,7 @@ export default async function PartyDetailPage({ params }: { params: Promise<{ id
                 </span>
               </span>
               <span className="flex items-center gap-2">
-                <span className="text-sm tabular-nums">{formatCompactMoney(t.amount)}</span>
+                <span className="text-sm tabular-nums">{formatCompactMoney(t.amount, t.currency)}</span>
                 <Badge tone={STATUS_TONE[t.status]}>{STATUS_LABELS[t.status]}</Badge>
               </span>
             </Link>

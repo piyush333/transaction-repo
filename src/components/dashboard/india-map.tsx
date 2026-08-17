@@ -12,6 +12,7 @@ export type MapCity = {
   name: string;
   code: string;
   state: string | null;
+  currency: string;
   balance: number;
   receivable: number;
   payable: number;
@@ -21,6 +22,7 @@ export type MapCity = {
 export type MapEdge = {
   fromId: string;
   toId: string;
+  currency: string;
   amount: number;
 };
 
@@ -217,7 +219,7 @@ export function IndiaMap({ cities, edges }: { cities: MapCity[]; edges: MapEdge[
                   className="fill-amber-600 font-medium dark:fill-amber-400"
                   fontSize={7 / transform.k}
                 >
-                  {formatCompactMoney(e.amount)}
+                  {formatCompactMoney(e.amount, e.currency)}
                 </text>
               </g>
             );
@@ -293,9 +295,9 @@ export function IndiaMap({ cities, edges }: { cities: MapCity[]; edges: MapEdge[
             return (
               <div className="space-y-0.5">
                 <p className="font-semibold">{c.name}</p>
-                <p>Net Position: {formatCompactMoney(c.balance)}</p>
-                <p>Receivable: {formatCompactMoney(c.receivable)}</p>
-                <p>Payable: {formatCompactMoney(c.payable)}</p>
+                <p>Net Position: {formatCompactMoney(c.balance, c.currency)}</p>
+                <p>Receivable: {formatCompactMoney(c.receivable, c.currency)}</p>
+                <p>Payable: {formatCompactMoney(c.payable, c.currency)}</p>
               </div>
             );
           })()}
@@ -325,7 +327,7 @@ export function IndiaMap({ cities, edges }: { cities: MapCity[]; edges: MapEdge[
                 <Link href={`/cities/${c.id}`} className="font-medium text-foreground hover:underline">
                   {c.name}
                 </Link>{" "}
-                ({formatCompactMoney(c.balance)})
+                ({formatCompactMoney(c.balance, c.currency)})
               </span>
             ))}
           </p>
