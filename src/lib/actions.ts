@@ -37,6 +37,96 @@ export async function createCityAction(_prev: ActionState, formData: FormData): 
   redirect("/cities");
 }
 
+export async function updateCityAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const supabase = await createClient();
+  const id = String(formData.get("id") || "");
+  const code = String(formData.get("code") || "").toUpperCase().trim();
+  const name = String(formData.get("name") || "").trim();
+  const state = String(formData.get("state") || "").trim() || null;
+  const country = String(formData.get("country") || "India").trim() || "India";
+  const currency = String(formData.get("currency") || "INR").trim();
+  const opening_balance = Number(formData.get("opening_balance") || 0);
+  const active = formData.get("active") === "on";
+
+  if (!id || !code || !name) return { error: "City code and name are required." };
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Not signed in." };
+
+  const { data: before } = await supabase.from("cities").select("*").eq("id", id).single();
+
+  const { error } = await supabase
+    .from("cities")
+    .update({ code, name, state, country, currency, opening_balance, active })
+    .eq("id", id);
+
+  if (error) return { error: error.message };
+
+  // Cities carry an opening balance and drive token prefixes, so edits are
+  // worth recording even though they aren't ledger entries themselves.
+  await supabase.from("audit_logs").insert({
+    entity_type: "city",
+    entity_id: id,
+    action: "update",
+    performed_by: user.id,
+    previous_value: before,
+    new_value: { code, name, state, country, currency, opening_balance, active },
+    reason: "City details edited",
+    owner_id: user.id,
+  });
+
+  revalidatePath("/cities");
+  revalidatePath(`/cities/${id}`);
+  revalidatePath("/dashboard");
+  redirect(`/cities/${id}`);
+}
+
+export async function updatePartyAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const supabase = await createClient();
+  const id = String(formData.get("id") || "");
+  const name = String(formData.get("name") || "").trim();
+  const phone = String(formData.get("phone") || "").trim() || null;
+  const party_type = String(formData.get("party_type") || "person");
+  const opening_balance = Number(formData.get("opening_balance") || 0);
+  const notes = String(formData.get("notes") || "").trim() || null;
+  const linked_profile_id = String(formData.get("linked_profile_id") || "") || null;
+  const active = formData.get("active") === "on";
+
+  if (!id || !name) return { error: "Name is required." };
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Not signed in." };
+
+  const { data: before } = await supabase.from("parties").select("*").eq("id", id).single();
+
+  const { error } = await supabase
+    .from("parties")
+    .update({ name, phone, party_type, opening_balance, notes, linked_profile_id, active })
+    .eq("id", id);
+
+  if (error) return { error: error.message };
+
+  await supabase.from("audit_logs").insert({
+    entity_type: "party",
+    entity_id: id,
+    action: "update",
+    performed_by: user.id,
+    previous_value: before,
+    new_value: { name, phone, party_type, opening_balance, notes, linked_profile_id, active },
+    reason: "Party details edited",
+    owner_id: user.id,
+  });
+
+  revalidatePath("/parties");
+  revalidatePath(`/parties/${id}`);
+  revalidatePath("/dashboard");
+  redirect(`/parties/${id}`);
+}
+
 export async function createPartyAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const supabase = await createClient();
   const name = String(formData.get("name") || "").trim();

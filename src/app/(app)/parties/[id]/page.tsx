@@ -1,4 +1,5 @@
 import { Badge } from "@/components/ui/badge";
+import { LinkButton } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatCard } from "@/components/ui/stat-card";
 import {
@@ -52,7 +53,13 @@ export default async function PartyDetailPage({ params }: { params: Promise<{ id
             {party.phone ? ` · ${party.phone}` : ""}
           </p>
         </div>
-        {!party.active && <Badge tone="neutral">Inactive</Badge>}
+        <div className="flex items-center gap-2">
+          {party.linked_profile_id && <Badge tone="positive">Linked contact</Badge>}
+          {!party.active && <Badge tone="neutral">Inactive</Badge>}
+          <LinkButton href={`/parties/${party.id}/edit`} variant="secondary" size="sm">
+            Edit
+          </LinkButton>
+        </div>
       </div>
 
       <Card className="p-5">

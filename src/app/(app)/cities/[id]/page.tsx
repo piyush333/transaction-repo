@@ -1,4 +1,5 @@
 import { Badge } from "@/components/ui/badge";
+import { LinkButton } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatCard } from "@/components/ui/stat-card";
 import {
@@ -51,7 +52,12 @@ export default async function CityDetailPage({ params }: { params: Promise<{ id:
             {city.country} · {city.currency}
           </p>
         </div>
-        {!city.active && <Badge tone="neutral">Inactive</Badge>}
+        <div className="flex items-center gap-2">
+          {!city.active && <Badge tone="neutral">Inactive</Badge>}
+          <LinkButton href={`/cities/${city.id}/edit`} variant="secondary" size="sm">
+            Edit
+          </LinkButton>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
