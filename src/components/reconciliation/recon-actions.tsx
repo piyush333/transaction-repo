@@ -4,9 +4,12 @@ import { Button } from "@/components/ui/button";
 import {
   cancelDeleteRequestAction,
   confirmDeleteTransactionAction,
+  settleTransferAction,
   updateTransactionStatusAction,
 } from "@/lib/actions";
+import { formatCompactMoney } from "@/lib/format";
 import type { ReconciliationCategory } from "@/lib/types";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
@@ -19,9 +22,16 @@ import { useState, useTransition } from "react";
 export function ReconActions({
   transactionId,
   category,
+  token,
+  outstanding,
+  currency,
 }: {
   transactionId: string;
   category: ReconciliationCategory;
+  token: string;
+  /** Only meaningful for unsettled_transfer: still in transit. */
+  outstanding?: number;
+  currency?: string;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -113,6 +123,28 @@ export function ReconActions({
             >
               Cancel it
             </Button>
+          </>
+        );
+      // Settling in full is one click. A tranche needs an amount, so that
+      // goes to the transaction page rather than cramming a form in here.
+      case "unsettled_transfer":
+        return (
+          <>
+            <Button
+              size="sm"
+              disabled={pending}
+              onClick={() => run(() => settleTransferAction(transactionId))}
+            >
+              {outstanding != null && currency
+                ? `Mark ${formatCompactMoney(outstanding, currency)} arrived`
+                : "Mark arrived"}
+            </Button>
+            <Link
+              href={`/transactions/${token}`}
+              className="text-xs text-muted underline hover:text-foreground"
+            >
+              Part of it
+            </Link>
           </>
         );
       default:

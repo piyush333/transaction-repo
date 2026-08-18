@@ -191,6 +191,24 @@ export async function getReconciliationFlags(): Promise<ReconciliationFlag[]> {
   return (data as ReconciliationFlag[]) ?? [];
 }
 
+/**
+ * Transfers posted at the destination that settle this one. Reversals also
+ * carry settles_transaction_id, so restrict to the transfer types the way
+ * settle_transfer and reconciliation_flags do — otherwise a reversal reads
+ * as delivered money.
+ */
+export async function getSettlementsOf(transactionId: string): Promise<Transaction[]> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("transactions")
+    .select("*")
+    .eq("settles_transaction_id", transactionId)
+    .in("transaction_type", ["transfer_sent", "transfer_received"])
+    .in("status", ["confirmed", "settled"])
+    .order("created_at");
+  return (data as Transaction[]) ?? [];
+}
+
 export async function getTransactionVolumeDaily(days = 30) {
   const supabase = await createClient();
   const since = new Date();

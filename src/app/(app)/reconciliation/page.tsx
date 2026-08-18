@@ -48,7 +48,7 @@ const CATEGORY_META: Record<
   unsettled_transfer: {
     label: "Unsettled transfer",
     tone: "warning",
-    hint: "Money left the origin city but nothing has been recorded as settling it.",
+    hint: "Cash left the origin city. The destination city's books do not move until you record it arriving.",
   },
   matched: {
     label: "Matched",
@@ -201,6 +201,8 @@ function ReconRow({
   partyName: string | null;
 }) {
   const meta = CATEGORY_META[flag.category];
+  const settled = Number(flag.settled_amount ?? 0);
+  const outstanding = Number(flag.amount) - settled;
 
   return (
     <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-start sm:justify-between">
@@ -228,6 +230,12 @@ function ReconRow({
         </p>
 
         <p className="text-xs text-muted">{meta.hint}</p>
+        {flag.category === "unsettled_transfer" && settled > 0 && (
+          <p className="text-xs text-muted">
+            {formatCompactMoney(settled, flag.currency)} already arrived ·{" "}
+            {formatCompactMoney(outstanding, flag.currency)} still in transit
+          </p>
+        )}
         {flag.delete_reason && (
           <p className="text-xs text-muted">Reason given: {flag.delete_reason}</p>
         )}
@@ -235,7 +243,13 @@ function ReconRow({
       </div>
 
       <div className="shrink-0 sm:pl-4">
-        <ReconActions transactionId={flag.transaction_id} category={flag.category} />
+        <ReconActions
+          transactionId={flag.transaction_id}
+          category={flag.category}
+          token={flag.token}
+          outstanding={outstanding}
+          currency={flag.currency}
+        />
       </div>
     </div>
   );

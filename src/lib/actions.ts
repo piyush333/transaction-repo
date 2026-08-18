@@ -321,3 +321,28 @@ export async function cancelDeleteRequestAction(transactionId: string) {
   revalidatePath("/reconciliation");
   return { error: error?.message ?? null };
 }
+
+/**
+ * Records that a cross-city transfer actually landed, by posting the
+ * matching arrival at the destination city (see
+ * supabase/migrations/20260818130000_settle_transfers.sql). Omit the amount
+ * to settle whatever is still outstanding; pass one to settle a tranche.
+ */
+export async function settleTransferAction(
+  transactionId: string,
+  amount?: number,
+  description?: string
+) {
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("settle_transfer", {
+    p_transaction_id: transactionId,
+    p_amount: amount ?? null,
+    p_description: description ?? null,
+  });
+
+  revalidatePath("/transactions");
+  revalidatePath("/dashboard");
+  revalidatePath("/reconciliation");
+  revalidatePath("/cities");
+  return { error: error?.message ?? null };
+}

@@ -2,6 +2,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DeleteTransaction } from "@/components/transactions/delete-transaction";
 import { ReverseTransactionForm } from "@/components/transactions/reverse-transaction-form";
+import { SettleTransfer } from "@/components/transactions/settle-transfer";
 import { TransactionActions } from "@/components/transactions/transaction-actions";
 import {
   formatCompactMoney,
@@ -16,6 +17,7 @@ import {
   getCurrentProfile,
   getPartyById,
   getProfilesByIds,
+  getSettlementsOf,
   getTransactionByToken,
   getTransactionEntries,
 } from "@/lib/queries";
@@ -40,6 +42,7 @@ export default async function TransactionDetailPage({
     counterparty,
     profile,
     actors,
+    settlements,
   ] = await Promise.all([
     getTransactionEntries(transaction.id),
     getAuditLogsForEntity("transaction", transaction.id),
@@ -51,6 +54,7 @@ export default async function TransactionDetailPage({
     getProfilesByIds(
       [transaction.created_by, transaction.approved_by].filter((x): x is string => Boolean(x))
     ),
+    getSettlementsOf(transaction.id),
   ]);
 
   const actorById = new Map(actors.map((a) => [a.id, a]));
@@ -59,6 +63,21 @@ export default async function TransactionDetailPage({
   // or dispute it independently.
   const canManage = !!profile && profile.id === transaction.owner_id;
   const isLinked = Boolean(transaction.linked_transaction_id);
+
+  // A city_transfer posts both legs at once, so it is never outstanding.
+  // A transfer_sent/received posts only at the origin — the destination
+  // city's cash does not move until the money lands, which is what
+  // settlement records. See the settle_transfer migration.
+  const settledAmount = settlements.reduce((sum, s) => sum + Number(s.amount), 0);
+  const outstanding = Number(transaction.amount) - settledAmount;
+  const isSettleable =
+    canManage &&
+    (transaction.transaction_type === "transfer_sent" ||
+      transaction.transaction_type === "transfer_received") &&
+    Boolean(transaction.destination_city_id) &&
+    Boolean(transaction.party_id) &&
+    ["confirmed", "settled"].includes(transaction.status) &&
+    outstanding > 0;
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
@@ -158,7 +177,8 @@ export default async function TransactionDetailPage({
 
       {(transaction.reversed_transaction_id ||
         transaction.settles_transaction_id ||
-        transaction.linked_transaction_id) && (
+        transaction.linked_transaction_id ||
+        settlements.length > 0) && (
         <Card>
           <CardHeader>
             <CardTitle>Related Transactions</CardTitle>
@@ -178,8 +198,37 @@ export default async function TransactionDetailPage({
             )}
             {transaction.settles_transaction_id && (
               <p>
-                This is a correction of <RelatedLink id={transaction.settles_transaction_id} />
+                {transaction.transaction_type === "transfer_sent" ||
+                transaction.transaction_type === "transfer_received"
+                  ? "Records the arrival of "
+                  : "This is a correction of "}
+                <RelatedLink id={transaction.settles_transaction_id} />
               </p>
+            )}
+            {settlements.length > 0 && (
+              <div>
+                <p className="mb-1">
+                  Settled {formatCompactMoney(settledAmount, transaction.currency)} of{" "}
+                  {formatCompactMoney(transaction.amount, transaction.currency)}
+                  {outstanding > 0
+                    ? ` — ${formatCompactMoney(outstanding, transaction.currency)} still in transit`
+                    : " — fully arrived"}
+                </p>
+                <ul className="space-y-0.5">
+                  {settlements.map((s) => (
+                    <li key={s.id} className="text-xs text-muted">
+                      <Link
+                        href={`/transactions/${s.token}`}
+                        className="font-mono hover:underline"
+                      >
+                        {s.token}
+                      </Link>{" "}
+                      · {formatCompactMoney(s.amount, s.currency)} ·{" "}
+                      {formatDateTime(s.created_at)}
+                    </li>
+                  ))}
+                </ul>
+              </div>
             )}
           </CardContent>
         </Card>
@@ -195,6 +244,15 @@ export default async function TransactionDetailPage({
             status={transaction.status}
             canManage={canManage}
           />
+          {isSettleable && (
+            <SettleTransfer
+              transactionId={transaction.id}
+              outstanding={outstanding}
+              currency={transaction.currency}
+              destinationCityName={destinationCity?.name ?? "the destination city"}
+              partyName={party?.name ?? "the party"}
+            />
+          )}
           {canManage && transaction.status !== "reversed" && (
             <ReverseTransactionForm transactionId={transaction.id} />
           )}

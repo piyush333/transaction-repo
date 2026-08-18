@@ -222,6 +222,8 @@ export interface ReconciliationFlag {
   party_id: string | null;
   linked_transaction_id: string | null;
   delete_reason: string | null;
+  /** Sum of settling transfers posted at the destination so far. */
+  settled_amount: number;
   created_at: string;
 }
 
