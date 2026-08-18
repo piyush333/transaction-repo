@@ -196,17 +196,32 @@ export interface PartyExposureRow {
   exposure: number;
 }
 
+/** See supabase/migrations/20260818120000_reconciliation_for_two_books.sql */
+export type ReconciliationCategory =
+  | "delete_awaiting_you"
+  | "delete_awaiting_them"
+  | "disputed"
+  | "broken_pair"
+  | "awaiting_you"
+  | "awaiting_them"
+  | "stale_pending"
+  | "unsettled_transfer"
+  | "matched";
+
 export interface ReconciliationFlag {
   transaction_id: string;
   token: string;
-  reconciliation_status: "matched" | "pending" | "discrepancy";
+  category: ReconciliationCategory;
+  needs_action_by: "you" | "them" | "either" | null;
   transaction_status: TransactionStatus;
+  counterpart_status: TransactionStatus | null;
   amount: number;
   currency: string;
-  linked_transaction_id: string | null;
-  delete_requested_by: string | null;
   origin_city_id: string;
   destination_city_id: string | null;
+  party_id: string | null;
+  linked_transaction_id: string | null;
+  delete_reason: string | null;
   created_at: string;
 }
 

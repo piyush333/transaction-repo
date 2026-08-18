@@ -47,7 +47,13 @@ export function TransactionActions({
             Mark Settled
           </Button>
         )}
-        {(status === "confirmed" || status === "settled" || status === "pending") && (
+        {/*
+          Not offered on `pending`: disputed entries count toward balances
+          (see the confirmed_entries view), so disputing something never
+          confirmed would post it into the books instead of holding it out.
+          Cancel is the correct action there.
+        */}
+        {(status === "confirmed" || status === "settled") && (
           <Button size="sm" variant="destructive" disabled={isPending} onClick={() => run("disputed")}>
             Mark Disputed
           </Button>

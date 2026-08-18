@@ -251,6 +251,7 @@ export async function updateTransactionStatusAction(transactionId: string, statu
 
   revalidatePath("/transactions");
   revalidatePath("/dashboard");
+  revalidatePath("/reconciliation");
   return { error: error?.message ?? null };
 }
 
@@ -306,6 +307,7 @@ export async function confirmDeleteTransactionAction(transactionId: string) {
   });
   revalidatePath("/transactions");
   revalidatePath("/dashboard");
+  revalidatePath("/reconciliation");
   return { error: error?.message ?? null };
 }
 
@@ -316,5 +318,6 @@ export async function cancelDeleteRequestAction(transactionId: string) {
   });
   revalidatePath("/transactions");
   revalidatePath("/dashboard");
+  revalidatePath("/reconciliation");
   return { error: error?.message ?? null };
 }
