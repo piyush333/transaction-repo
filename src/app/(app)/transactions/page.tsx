@@ -8,7 +8,7 @@ import {
   STATUS_TONE,
   TRANSACTION_TYPE_LABELS,
 } from "@/lib/format";
-import { getCities, getTransactions } from "@/lib/queries";
+import { getCities, getLinkedTransactionCities, getTransactions } from "@/lib/queries";
 import Link from "next/link";
 import { cn } from "@/lib/cn";
 
@@ -25,6 +25,11 @@ export default async function TransactionsPage({
     getCities(),
   ]);
   const cityById = new Map(cities.map((c) => [c.id, c]));
+  // Where each linked transaction landed in the OTHER person's book —
+  // batched once for the whole list rather than per row.
+  const linkedCityById = await getLinkedTransactionCities(
+    transactions.map((t) => t.linked_transaction_id)
+  );
 
   return (
     <div className="space-y-6">
@@ -82,6 +87,15 @@ export default async function TransactionsPage({
                   <td className="px-4 py-3 text-foreground/80">
                     {cityById.get(t.origin_city_id)?.code ?? "—"}
                     {t.destination_city_id ? ` → ${cityById.get(t.destination_city_id)?.code ?? ""}` : ""}
+                    {t.linked_transaction_id && linkedCityById.get(t.linked_transaction_id) && (
+                      <span
+                        className="text-muted"
+                        title={`Their book: ${linkedCityById.get(t.linked_transaction_id)!.name}`}
+                      >
+                        {" "}
+                        ↔ {linkedCityById.get(t.linked_transaction_id)!.code}
+                      </span>
+                    )}
                   </td>
                   <td className="px-4 py-3 tabular-nums">{formatCompactMoney(t.amount, t.currency)}</td>
                   <td className="px-4 py-3">

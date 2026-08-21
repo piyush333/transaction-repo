@@ -15,6 +15,7 @@ import {
   getAuditLogsForEntity,
   getCityById,
   getCurrentProfile,
+  getLinkedTransactionCities,
   getPartyById,
   getProfilesByIds,
   getSettlementsOf,
@@ -43,6 +44,7 @@ export default async function TransactionDetailPage({
     profile,
     actors,
     settlements,
+    linkedCities,
   ] = await Promise.all([
     getTransactionEntries(transaction.id),
     getAuditLogsForEntity("transaction", transaction.id),
@@ -55,7 +57,15 @@ export default async function TransactionDetailPage({
       [transaction.created_by, transaction.approved_by].filter((x): x is string => Boolean(x))
     ),
     getSettlementsOf(transaction.id),
+    getLinkedTransactionCities([transaction.linked_transaction_id]),
   ]);
+
+  // Where this transaction landed in the OTHER person's book. Always their
+  // city, never yours — a mirror can't post at your own city, since cities
+  // are never shared. See getLinkedTransactionCities.
+  const linkedCity = transaction.linked_transaction_id
+    ? linkedCities.get(transaction.linked_transaction_id) ?? null
+    : null;
 
   const actorById = new Map(actors.map((a) => [a.id, a]));
   // Each person owns their own book, so managing simply means it's yours.
@@ -134,6 +144,18 @@ export default async function TransactionDetailPage({
                 "—"
               )}
             </Detail>
+            {transaction.linked_transaction_id && (
+              <Detail label="Their City">
+                {linkedCity ? (
+                  <span>
+                    {linkedCity.name} ({linkedCity.code})
+                    <span className="text-muted"> — their book</span>
+                  </span>
+                ) : (
+                  "—"
+                )}
+              </Detail>
+            )}
             <Detail label="Counterparty">
               {counterparty ? (
                 <Link href={`/parties/${counterparty.id}`} className="hover:underline">
@@ -188,6 +210,11 @@ export default async function TransactionDetailPage({
               <p>
                 Shared transaction — the matching entry in the other person&apos;s book is{" "}
                 <RelatedLink id={transaction.linked_transaction_id} />
+                {linkedCity && (
+                  <>
+                    , booked at {linkedCity.name} ({linkedCity.code})
+                  </>
+                )}
               </p>
             )}
             {transaction.reversed_transaction_id && (

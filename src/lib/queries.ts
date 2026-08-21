@@ -209,6 +209,44 @@ export async function getSettlementsOf(transactionId: string): Promise<Transacti
   return (data as Transaction[]) ?? [];
 }
 
+/**
+ * For a batch of linked-transaction ids, the origin city of each — i.e.
+ * the OTHER person's city that a shared transaction is booked at in their
+ * book. A mirror always posts at the counterpart's own city, never at the
+ * origin's city (cities are never shared), so this is the only way to see
+ * where a linked transaction actually landed on the other side.
+ *
+ * Readable at all only because of a narrow RLS carve-out on `cities`: you
+ * may see the origin city of any transaction reachable through a mutual
+ * link, and nothing else of the other person's book. Returns a map keyed
+ * by the linked_transaction_id passed in, so callers look up by
+ * `transaction.linked_transaction_id` directly.
+ */
+export async function getLinkedTransactionCities(
+  linkedTransactionIds: (string | null)[]
+): Promise<Map<string, City>> {
+  const ids = [...new Set(linkedTransactionIds.filter((x): x is string => Boolean(x)))];
+  if (ids.length === 0) return new Map();
+
+  const supabase = await createClient();
+  const { data: linked } = await supabase
+    .from("transactions")
+    .select("id, origin_city_id")
+    .in("id", ids);
+  if (!linked?.length) return new Map();
+
+  const cityIds = [...new Set(linked.map((t) => t.origin_city_id).filter(Boolean))];
+  const { data: cities } = await supabase.from("cities").select("*").in("id", cityIds);
+  const cityById = new Map(((cities as City[]) ?? []).map((c) => [c.id, c]));
+
+  const result = new Map<string, City>();
+  for (const t of linked) {
+    const city = t.origin_city_id ? cityById.get(t.origin_city_id) : undefined;
+    if (city) result.set(t.id, city);
+  }
+  return result;
+}
+
 export async function getTransactionVolumeDaily(days = 30) {
   const supabase = await createClient();
   const since = new Date();
